@@ -1,7 +1,7 @@
 package com.people.job.user.service;
 
+import com.people.job.user.domain.User;
 import com.people.job.user.dto.UserDTO;
-import com.people.job.user.entity.UserEntity;
 import com.people.job.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -26,9 +26,9 @@ public class UserService {
 
         String emailCode = UUID.randomUUID().toString().substring(0, 8);
 
-        UserEntity user = UserEntity.builder()
+        User user = User.builder()
                 .userid(dto.getUserid())
-                .pwd(passwordEncoder.encode(dto.getPwd()))
+                .password(passwordEncoder.encode(dto.getPwd()))
                 .name(dto.getName())
                 .email(dto.getEmail())
                 .phone(dto.getPhone())
@@ -36,7 +36,7 @@ public class UserService {
                 .address(dto.getAddress())
                 .addressDetail(dto.getAddressDetail())
                 .userType(dto.getUserType())
-                .role("ROLE_USER")
+                .role("user")
                 .emailVerified(false)
                 .emailVerifyCode(emailCode)
                 .build();
@@ -48,10 +48,10 @@ public class UserService {
     }
 
     public String login(String userid, String rawPassword) {
-        UserEntity user = userRepository.findByUserid(userid)
+        User user = userRepository.findByUserid(userid)
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 아이디입니다."));
 
-        if (!passwordEncoder.matches(rawPassword, user.getPwd())) {
+        if (!passwordEncoder.matches(rawPassword, user.getPassword())) {
             throw new RuntimeException("비밀번호가 일치하지 않습니다.");
         }
 
@@ -64,7 +64,7 @@ public class UserService {
     }
 
     public void verifyEmail(String userid, String code) {
-        UserEntity user = userRepository.findByUserid(userid)
+        User user = userRepository.findByUserid(userid)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
 
         if (!user.getEmailVerifyCode().equals(code)) {
