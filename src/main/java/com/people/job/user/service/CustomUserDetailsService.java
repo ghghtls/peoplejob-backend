@@ -1,6 +1,5 @@
 package com.people.job.user.service;
 
-import com.people.job.user.domain.User;
 import com.people.job.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;

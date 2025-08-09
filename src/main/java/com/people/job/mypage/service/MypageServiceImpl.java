@@ -42,7 +42,7 @@ public class MypageServiceImpl implements MypageService {
     @Override
     public List<JobopeningDTO> getMyJobopenings(Long companyNo) {
         return jobopeningRepository.findAll().stream()
-                .filter(job -> job.getCompanyNo().equals(companyNo))
+                .filter(job -> job.getCompany().getUserNo().equals(companyNo))
                 .map(this::toJobDTO)
                 .collect(Collectors.toList());
     }
@@ -85,7 +85,7 @@ public class MypageServiceImpl implements MypageService {
                 .salary(e.getSalary())
                 .regdate(e.getRegdate())
                 .deadline(e.getDeadline())
-                .companyNo(e.getCompanyNo())
+                .companyNo(e.getCompany().getUserNo())
                 .filename(e.getFilename())
                 .originalFilename(e.getOriginalFilename())
                 .build();

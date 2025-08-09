@@ -1,12 +1,12 @@
 package com.people.job.user.repository;
 
-import com.people.job.user.domain.User;
+import com.people.job.user.entity.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
 
-public interface UserRepository extends JpaRepository<User, Long> {
-    Optional<User> findByUserid(String userid);
+public interface UserRepository extends JpaRepository<UserEntity, Long> {
+    Optional<UserEntity> findByUserid(String userid);
     boolean existsByUserid(String userid);
-    Optional<User> findByEmail(String email);
+    Optional<UserEntity> findByEmail(String email);
 }
