@@ -15,8 +15,8 @@ public class JwtTokenProvider {
     @Value("${jwt.secret}")
     private String secret;
 
-    @Value("${jwt.expiration}")
-    private long expiration;
+    @Value("${jwt.expiration-ms}")
+    private long expirationMs;
 
     private Key key;
 
@@ -30,7 +30,7 @@ public class JwtTokenProvider {
         claims.put("role", role);
 
         Date now = new Date();
-        Date expiry = new Date(now.getTime() + expiration);
+        Date expiry = new Date(now.getTime() + expirationMs);
 
         return Jwts.builder()
                 .setClaims(claims)
