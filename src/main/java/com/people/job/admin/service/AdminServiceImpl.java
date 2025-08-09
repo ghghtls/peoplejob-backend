@@ -41,7 +41,7 @@ public class AdminServiceImpl implements AdminService {
                 .map(job -> JobopeningDTO.builder()
                         .jobopeningNo(job.getJobopeningNo())
                         .title(job.getTitle())
-                        .companyNo(job.getCompanyNo())
+                        .companyNo(job.getCompany().getUserNo())
                         .regdate(job.getRegdate())
                         .deadline(job.getDeadline())
                         .build())
