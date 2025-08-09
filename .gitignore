@@ -38,3 +38,6 @@ build/
 
 # MySQL data directory (ignore all database storage files)
 mysql-data/
+
+src/main/resources/application.yml
+src/main/resources/application-*.yml
