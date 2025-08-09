@@ -4,16 +4,20 @@ import com.people.job.job.dto.JobopeningDTO;
 import com.people.job.job.entity.JobopeningEntity;
 import com.people.job.job.repository.JobopeningRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import com.people.job.user.repository.UserRepository;
 
 @Service
 @RequiredArgsConstructor
 public class JobopeningServiceImpl implements JobopeningService {
 
     private final JobopeningRepository jobopeningRepository;
+    private final UserRepository userRepository;
 
     @Override
     public void insertJobopening(JobopeningDTO dto) {
@@ -27,7 +31,10 @@ public class JobopeningServiceImpl implements JobopeningService {
                 .salary(dto.getSalary())
                 .regdate(dto.getRegdate())
                 .deadline(dto.getDeadline())
-                .companyNo(dto.getCompanyNo())
+                .company( // ✅ UserEntity로 변환
+                        userRepository.findById(dto.getCompanyNo())
+                                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "회사 정보가 없습니다."))
+                )
                 .filename(dto.getFilename())
                 .originalFilename(dto.getOriginalFilename())
                 .build();
@@ -49,7 +56,7 @@ public class JobopeningServiceImpl implements JobopeningService {
                         .salary(entity.getSalary())
                         .regdate(entity.getRegdate())
                         .deadline(entity.getDeadline())
-                        .companyNo(entity.getCompanyNo())
+                        .companyNo(entity.getCompany().getUserNo())
                         .filename(entity.getFilename())
                         .originalFilename(entity.getOriginalFilename())
                         .build())
@@ -59,7 +66,7 @@ public class JobopeningServiceImpl implements JobopeningService {
     @Override
     public JobopeningDTO selectByNo(Long jobopeningNo) {
         JobopeningEntity entity = jobopeningRepository.findById(jobopeningNo)
-                .orElseThrow(() -> new RuntimeException("해당 공고가 없습니다."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "공고가 존재하지 않습니다."));
 
         return JobopeningDTO.builder()
                 .jobopeningNo(entity.getJobopeningNo())
@@ -72,8 +79,7 @@ public class JobopeningServiceImpl implements JobopeningService {
                 .salary(entity.getSalary())
                 .regdate(entity.getRegdate())
                 .deadline(entity.getDeadline())
-                .companyNo(entity.getCompanyNo())
-                .filename(entity.getFilename())
+                .companyNo(entity.getCompany().getUserNo())
                 .originalFilename(entity.getOriginalFilename())
                 .build();
     }
@@ -81,7 +87,7 @@ public class JobopeningServiceImpl implements JobopeningService {
     @Override
     public void updateJobopening(JobopeningDTO dto) {
         JobopeningEntity entity = jobopeningRepository.findById(dto.getJobopeningNo())
-                .orElseThrow(() -> new RuntimeException("해당 공고가 없습니다."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "공고가 존재하지 않습니다."));
 
         entity.setTitle(dto.getTitle());
         entity.setContent(dto.getContent());
@@ -92,7 +98,10 @@ public class JobopeningServiceImpl implements JobopeningService {
         entity.setSalary(dto.getSalary());
         entity.setRegdate(dto.getRegdate());
         entity.setDeadline(dto.getDeadline());
-        entity.setCompanyNo(dto.getCompanyNo());
+        entity.setCompany(
+                userRepository.findById(dto.getCompanyNo())
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "회사 정보가 없습니다."))
+        );
         entity.setFilename(dto.getFilename());
         entity.setOriginalFilename(dto.getOriginalFilename());
 
@@ -101,6 +110,9 @@ public class JobopeningServiceImpl implements JobopeningService {
 
     @Override
     public void deleteJobopening(Long jobopeningNo) {
+        if (!jobopeningRepository.existsById(jobopeningNo)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "삭제할 공고가 존재하지 않습니다.");
+        }
         jobopeningRepository.deleteById(jobopeningNo);
     }
 }

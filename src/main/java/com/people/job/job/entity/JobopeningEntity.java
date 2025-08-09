@@ -1,5 +1,6 @@
 package com.people.job.job.entity;
 
+import com.people.job.user.entity.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -31,7 +32,9 @@ public class JobopeningEntity {
     private LocalDate regdate;
     private LocalDate deadline;
 
-    private Long companyNo; // 기업회원 ID 외래키
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_no", nullable = false)
+    private UserEntity company;
 
     private String filename;
     private String originalFilename;
