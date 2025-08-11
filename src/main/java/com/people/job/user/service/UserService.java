@@ -31,11 +31,19 @@ public class UserService {
             throw new RuntimeException("이미 존재하는 아이디입니다.");
         }
 
-        // userType 설정: U(개인회원), C(기업회원)
-        String userType = dto.getUserType() != null ? dto.getUserType() : "U";
+        // userType 설정: individual(개인회원), company(기업회원)
+        // 또는 DB에 맞게: user(개인회원), company(기업회원)
+        String userType = dto.getUserType() != null ? dto.getUserType() : "user";
 
         // role 설정: ROLE_USER, ROLE_COMPANY, ROLE_ADMIN
-        String role = userType.equals("C") ? "ROLE_COMPANY" : "ROLE_USER";
+        String role;
+        if (userType.equals("company")) {
+            role = "ROLE_COMPANY";
+        } else if (userType.equals("admin")) {
+            role = "ROLE_ADMIN";
+        } else {
+            role = "ROLE_USER";
+        }
 
         String emailCode = UUID.randomUUID().toString().substring(0, 8);
 
@@ -56,7 +64,8 @@ public class UserService {
 
         userRepository.save(user);
 
-        log.info("회원가입 성공 - ID: {}, 인증코드: {}", dto.getUserid(), emailCode);
+        log.info("회원가입 성공 - ID: {}, Type: {}, Role: {}, 인증코드: {}",
+                dto.getUserid(), userType, role, emailCode);
 
         Map<String, String> result = new HashMap<>();
         result.put("message", "회원가입 성공");
@@ -89,7 +98,8 @@ public class UserService {
         response.put("role", user.getRole());
         response.put("userType", user.getUserType());
 
-        log.info("로그인 성공: {} - Role: {}", userid, user.getRole());
+        log.info("로그인 성공: {} - Type: {}, Role: {}",
+                userid, user.getUserType(), user.getRole());
 
         return response;
     }
