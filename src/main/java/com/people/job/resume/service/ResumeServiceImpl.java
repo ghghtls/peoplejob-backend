@@ -6,6 +6,7 @@ import com.people.job.resume.repository.ResumeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -16,9 +17,25 @@ public class ResumeServiceImpl implements ResumeService {
     private final ResumeRepository resumeRepository;
 
     @Override
-    public void insertResume(ResumeDTO dto) {
-        ResumeEntity entity = dtoToEntity(dto);
-        resumeRepository.save(entity);
+    public Long insertResume(ResumeDTO dto) {
+        ResumeEntity entity = ResumeEntity.builder()
+                .title(dto.getTitle())
+                .content(dto.getContent())
+                .education(dto.getEducation())
+                .career(dto.getCareer())
+                .certificate(dto.getCertificate())      // 추가
+                .hopeJobtype(dto.getHopeJobtype())      // 일치 ✓
+                .hopeLocation(dto.getHopeLocation())    // 일치 ✓
+                .salary(dto.getSalary())                // 일치 ✓
+                .workType(dto.getWorkType())            // 추가
+                .regdate(dto.getRegdate())              // LocalDate → String으로 변경됨
+                .imagePath(dto.getImagePath())          // 추가
+                .originalImage(dto.getOriginalImage())  // 추가
+                .userNo(dto.getUserNo())                // 일치 ✓
+                .build();
+
+        ResumeEntity savedEntity = resumeRepository.save(entity);
+        return savedEntity.getResumeNo();
     }
 
     @Override

@@ -6,7 +6,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/resume")
@@ -17,8 +19,13 @@ public class ResumeController {
 
     @PostMapping
     public ResponseEntity<?> insert(@RequestBody ResumeDTO dto) {
-        resumeService.insertResume(dto);
-        return ResponseEntity.ok("이력서 등록 완료");
+        Long newResumeId = resumeService.insertResume(dto);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "이력서 등록 완료");
+        response.put("resumeId", newResumeId);
+
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping

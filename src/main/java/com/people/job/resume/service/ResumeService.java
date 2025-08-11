@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface ResumeService {
 
-    void insertResume(ResumeDTO dto);
+    Long insertResume(ResumeDTO dto);
 
     List<ResumeDTO> selectAll();
 
