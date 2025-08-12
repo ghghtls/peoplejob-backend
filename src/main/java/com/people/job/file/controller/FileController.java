@@ -1,6 +1,7 @@
 package com.people.job.file.controller;
 
 import com.people.job.file.service.FileService;
+import com.people.job.file.service.FileServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -101,11 +102,37 @@ public class FileController {
     @GetMapping("/download")
     public ResponseEntity<?> downloadFile(@RequestParam("fileUrl") String fileUrl) {
         try {
-            // 파일 다운로드 로직 구현
-            return ResponseEntity.ok("파일 다운로드 기능 구현 예정");
+            return fileService.downloadFile(fileUrl);
         } catch (Exception e) {
             return ResponseEntity.badRequest()
                     .body(Map.of("error", "파일 다운로드 실패: " + e.getMessage()));
+        }
+    }
+
+    // 관리자용 파일 목록 조회
+    @GetMapping("/admin/list")
+    public ResponseEntity<?> getFileList(
+            @RequestParam(value = "type", required = false) String type,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "20") int size) {
+        try {
+            Map<String, Object> result = fileService.getFileList(type, page, size);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "파일 목록 조회 실패: " + e.getMessage()));
+        }
+    }
+
+    // 파일 정보 조회
+    @GetMapping("/info")
+    public ResponseEntity<?> getFileInfo(@RequestParam("fileUrl") String fileUrl) {
+        try {
+            Map<String, Object> fileInfo = ((FileServiceImpl) fileService).getFileInfo(fileUrl);
+            return ResponseEntity.ok(fileInfo);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "파일 정보 조회 실패: " + e.getMessage()));
         }
     }
 }

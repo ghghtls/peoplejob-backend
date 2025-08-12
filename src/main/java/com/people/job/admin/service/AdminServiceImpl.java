@@ -2,6 +2,7 @@ package com.people.job.admin.service;
 
 import com.people.job.admin.dto.DashboardDTO;
 import com.people.job.inquiry.dto.InquiryDTO;
+import com.people.job.inquiry.entity.InquiryEntity;
 import com.people.job.inquiry.repository.InquiryRepository;
 import com.people.job.job.dto.JobopeningDTO;
 import com.people.job.job.entity.JobopeningEntity;
@@ -13,6 +14,7 @@ import com.people.job.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -60,8 +62,11 @@ public class AdminServiceImpl implements AdminService {
                         .inquiryNo(inq.getInquiryNo())
                         .userNo(inq.getUserNo())
                         .title(inq.getTitle())
+                        .content(inq.getContent())
                         .status(inq.getStatus())
                         .regdate(inq.getRegdate())
+                        .answer(inq.getAnswer())
+                        .answerDate(inq.getAnswerDate())
                         .build())
                 .collect(Collectors.toList());
     }
@@ -69,6 +74,18 @@ public class AdminServiceImpl implements AdminService {
     @Override
     public void deleteInquiry(Long inquiryNo) {
         inquiryRepository.deleteById(inquiryNo);
+    }
+
+    @Override
+    public void answerInquiry(Long inquiryNo, String answer, String answerBy) {
+        InquiryEntity entity = inquiryRepository.findById(inquiryNo)
+                .orElseThrow(() -> new RuntimeException("문의가 존재하지 않습니다."));
+
+        entity.setAnswer(answer);
+        entity.setAnswerDate(LocalDate.now());
+        entity.setStatus("ANSWERED");
+
+        inquiryRepository.save(entity);
     }
 
     @Override

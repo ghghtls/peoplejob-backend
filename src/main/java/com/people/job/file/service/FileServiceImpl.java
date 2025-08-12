@@ -3,11 +3,16 @@ package com.people.job.file.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -18,6 +23,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @Service
@@ -121,6 +128,115 @@ public class FileServiceImpl implements FileService {
         } catch (Exception e) {
             log.error("파일 삭제 실패: {}", fileUrl, e);
             throw new Exception("파일 삭제 중 오류가 발생했습니다: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public ResponseEntity<?> downloadFile(String fileUrl) throws Exception {
+        try {
+            // URL에서 파일 경로 추출
+            String relativePath = fileUrl.replace(uploadUrl, "");
+            if (relativePath.startsWith("/")) {
+                relativePath = relativePath.substring(1);
+            }
+
+            Path filePath = Paths.get(uploadPath, relativePath);
+
+            if (!Files.exists(filePath)) {
+                throw new Exception("파일이 존재하지 않습니다: " + fileUrl);
+            }
+
+            Resource resource = new UrlResource(filePath.toUri());
+
+            if (!resource.exists() || !resource.isReadable()) {
+                throw new Exception("파일을 읽을 수 없습니다: " + fileUrl);
+            }
+
+            // 파일명에서 원본 파일명 추출 (가능하면)
+            String fileName = filePath.getFileName().toString();
+            String originalFileName = extractOriginalFileName(fileName);
+
+            // Content-Type 결정
+            String contentType = Files.probeContentType(filePath);
+            if (contentType == null) {
+                contentType = "application/octet-stream";
+            }
+
+            log.info("파일 다운로드: {} -> {}", fileUrl, originalFileName);
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"" + originalFileName + "\"")
+                    .body(resource);
+
+        } catch (MalformedURLException e) {
+            log.error("잘못된 파일 URL: {}", fileUrl, e);
+            throw new Exception("잘못된 파일 URL입니다: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("파일 다운로드 실패: {}", fileUrl, e);
+            throw new Exception("파일 다운로드 중 오류가 발생했습니다: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public Map<String, Object> getFileList(String type, int page, int size) throws Exception {
+        try {
+            Path uploadDir = Paths.get(uploadPath);
+            if (!Files.exists(uploadDir)) {
+                return createEmptyFileList(page, size);
+            }
+
+            // 파일 목록 수집
+            List<Map<String, Object>> fileList;
+            try (Stream<Path> walk = Files.walk(uploadDir)) {
+                Stream<Path> fileStream = walk.filter(Files::isRegularFile);
+
+                // 타입별 필터링
+                if (type != null && !type.isEmpty()) {
+                    fileStream = fileStream.filter(path -> {
+                        String pathStr = path.toString();
+                        return switch (type.toLowerCase()) {
+                            case "resume" -> pathStr.contains("/resume/");
+                            case "job" -> pathStr.contains("/job/");
+                            case "board" -> pathStr.contains("/board/");
+                            case "image" -> isImagePath(pathStr);
+                            case "document" -> isDocumentPath(pathStr);
+                            default -> true;
+                        };
+                    });
+                }
+
+                fileList = fileStream
+                        .map(this::createFileInfo)
+                        .sorted((f1, f2) -> ((String) f2.get("lastModified"))
+                                .compareTo((String) f1.get("lastModified")))
+                        .collect(Collectors.toList());
+            }
+
+            // 페이징 처리
+            int totalElements = fileList.size();
+            int fromIndex = page * size;
+            int toIndex = Math.min(fromIndex + size, totalElements);
+
+            List<Map<String, Object>> pagedList = fromIndex < totalElements
+                    ? fileList.subList(fromIndex, toIndex)
+                    : List.of();
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("content", pagedList);
+            result.put("totalElements", totalElements);
+            result.put("totalPages", (int) Math.ceil((double) totalElements / size));
+            result.put("currentPage", page);
+            result.put("size", size);
+            result.put("hasNext", toIndex < totalElements);
+            result.put("hasPrevious", page > 0);
+
+            return result;
+
+        } catch (IOException e) {
+            log.error("파일 목록 조회 실패", e);
+            throw new Exception("파일 목록 조회 중 오류가 발생했습니다: " + e.getMessage());
         }
     }
 
@@ -235,6 +351,74 @@ public class FileServiceImpl implements FileService {
             return "";
         }
         return fileName.substring(fileName.lastIndexOf(".") + 1);
+    }
+
+    private String extractOriginalFileName(String generatedFileName) {
+        // 생성된 파일명에서 원본 파일명 추출 시도
+        // 형식: prefix_timestamp_uuid.extension
+        String[] parts = generatedFileName.split("_");
+        if (parts.length >= 3) {
+            String lastPart = parts[parts.length - 1]; // uuid.extension
+            String extension = getFileExtension(lastPart);
+            return "download." + extension;
+        }
+        return generatedFileName;
+    }
+
+    private boolean isImagePath(String path) {
+        String extension = getFileExtension(path).toLowerCase();
+        return ALLOWED_IMAGE_EXTENSIONS.contains(extension);
+    }
+
+    private boolean isDocumentPath(String path) {
+        String extension = getFileExtension(path).toLowerCase();
+        return ALLOWED_DOCUMENT_EXTENSIONS.contains(extension);
+    }
+
+    private Map<String, Object> createFileInfo(Path path) {
+        Map<String, Object> fileInfo = new HashMap<>();
+        try {
+            String relativePath = Paths.get(uploadPath).relativize(path).toString().replace("\\", "/");
+            String fileUrl = uploadUrl + "/" + relativePath;
+
+            fileInfo.put("fileName", path.getFileName().toString());
+            fileInfo.put("fileUrl", fileUrl);
+            fileInfo.put("filePath", relativePath);
+            fileInfo.put("fileSize", Files.size(path));
+            fileInfo.put("lastModified", Files.getLastModifiedTime(path).toString());
+            fileInfo.put("extension", getFileExtension(path.getFileName().toString()));
+            fileInfo.put("isImage", isImagePath(path.toString()));
+            fileInfo.put("isDocument", isDocumentPath(path.toString()));
+
+            // 파일 타입 분류
+            String pathStr = path.toString();
+            if (pathStr.contains("/resume/")) {
+                fileInfo.put("category", "resume");
+            } else if (pathStr.contains("/job/")) {
+                fileInfo.put("category", "job");
+            } else if (pathStr.contains("/board/")) {
+                fileInfo.put("category", "board");
+            } else {
+                fileInfo.put("category", "other");
+            }
+
+        } catch (IOException e) {
+            log.error("파일 정보 생성 실패: {}", path, e);
+            fileInfo.put("error", e.getMessage());
+        }
+        return fileInfo;
+    }
+
+    private Map<String, Object> createEmptyFileList(int page, int size) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("content", List.of());
+        result.put("totalElements", 0);
+        result.put("totalPages", 0);
+        result.put("currentPage", page);
+        result.put("size", size);
+        result.put("hasNext", false);
+        result.put("hasPrevious", false);
+        return result;
     }
 
     // 파일 정보 조회

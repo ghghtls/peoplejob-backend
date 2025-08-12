@@ -22,6 +22,8 @@ public interface AdminService {
 
     void deleteInquiry(Long inquiryNo);
 
+    void answerInquiry(Long inquiryNo, String answer, String answerBy);
+
     List<PaymentDTO> getAllPayments();
 
     DashboardDTO getDashboardStats();

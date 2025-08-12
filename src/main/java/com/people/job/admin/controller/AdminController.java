@@ -3,6 +3,7 @@ package com.people.job.admin.controller;
 import com.people.job.admin.dto.DashboardDTO;
 import com.people.job.admin.service.AdminService;
 import com.people.job.inquiry.dto.InquiryDTO;
+import com.people.job.inquiry.service.InquiryService;
 import com.people.job.job.dto.JobopeningDTO;
 import com.people.job.payment.dto.PaymentDTO;
 import com.people.job.user.entity.UserEntity;
@@ -18,6 +19,7 @@ import java.util.List;
 public class AdminController {
 
     private final AdminService adminService;
+    private final InquiryService inquiryService;
 
     @GetMapping("/users")
     public ResponseEntity<List<UserEntity>> allUsers() {
@@ -50,6 +52,13 @@ public class AdminController {
     public ResponseEntity<?> deleteInquiry(@PathVariable Long inquiryNo) {
         adminService.deleteInquiry(inquiryNo);
         return ResponseEntity.ok("문의 삭제 완료");
+    }
+
+    // 문의사항 답변 등록
+    @PutMapping("/inquiries/{inquiryNo}/answer")
+    public ResponseEntity<?> answerInquiry(@PathVariable Long inquiryNo, @RequestParam String answer, @RequestParam String answerBy) {
+        adminService.answerInquiry(inquiryNo, answer, answerBy);
+        return ResponseEntity.ok("답변 등록 완료");
     }
 
     @GetMapping("/payments")
