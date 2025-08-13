@@ -2,126 +2,60 @@ package com.people.job.user.service;
 
 import com.people.job.user.dto.UserDTO;
 import com.people.job.user.entity.UserEntity;
-import com.people.job.user.repository.UserRepository;
-import com.people.job.user.security.JwtTokenProvider;
-import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
-@Slf4j
-@Service
-@RequiredArgsConstructor
-public class UserService {
+public interface UserService {
 
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final JwtTokenProvider jwtTokenProvider;
+    // 기존 메서드들
+    Map<String, String> register(UserDTO dto);
+    Map<String, Object> login(String userid, String password);
+    void verifyEmail(String userid, String code);
+    UserEntity findByUserid(String userid);
 
-    @Transactional
-    public Map<String, String> register(UserDTO dto) {
-        log.info("회원가입 시도: {}", dto.getUserid());
+    // 새로 추가: 회원 정보 관리 메서드들
 
-        if (userRepository.existsByUserid(dto.getUserid())) {
-            throw new RuntimeException("이미 존재하는 아이디입니다.");
-        }
+    /**
+     * 회원 정보 조회
+     * @param userNo 회원 번호
+     * @return 회원 정보 DTO
+     */
+    UserDTO getUserProfile(Long userNo);
 
-        // userType 설정: individual(개인회원), company(기업회원)
-        // 또는 DB에 맞게: user(개인회원), company(기업회원)
-        String userType = dto.getUserType() != null ? dto.getUserType() : "user";
+    /**
+     * 회원 정보 수정
+     * @param userNo 회원 번호
+     * @param dto 수정할 회원 정보
+     * @return 수정된 회원 정보 DTO
+     */
+    UserDTO updateUserProfile(Long userNo, UserDTO dto);
 
-        // role 설정: ROLE_USER, ROLE_COMPANY, ROLE_ADMIN
-        String role;
-        if (userType.equals("company")) {
-            role = "ROLE_COMPANY";
-        } else if (userType.equals("admin")) {
-            role = "ROLE_ADMIN";
-        } else {
-            role = "ROLE_USER";
-        }
+    /**
+     * 비밀번호 변경
+     * @param userNo 회원 번호
+     * @param currentPassword 현재 비밀번호
+     * @param newPassword 새 비밀번호
+     */
+    void changePassword(Long userNo, String currentPassword, String newPassword);
 
-        String emailCode = UUID.randomUUID().toString().substring(0, 8);
+    /**
+     * 프로필 이미지 업로드
+     * @param userNo 회원 번호
+     * @param file 업로드할 이미지 파일
+     * @return 업로드된 이미지 URL
+     */
+    String uploadProfileImage(Long userNo, MultipartFile file);
 
-        UserEntity user = UserEntity.builder()
-                .userid(dto.getUserid())
-                .password(passwordEncoder.encode(dto.getPassword()))
-                .name(dto.getName())
-                .email(dto.getEmail())
-                .phone(dto.getPhone())
-                .zipcode(dto.getZipcode())
-                .address(dto.getAddress())
-                .addressDetail(dto.getAddressDetail())
-                .userType(userType)
-                .role(role)
-                .emailVerified(false)  // 개발 중에는 true로 설정 가능
-                .emailVerifyCode(emailCode)
-                .build();
+    /**
+     * 프로필 이미지 삭제
+     * @param userNo 회원 번호
+     */
+    void deleteProfileImage(Long userNo);
 
-        userRepository.save(user);
-
-        log.info("회원가입 성공 - ID: {}, Type: {}, Role: {}, 인증코드: {}",
-                dto.getUserid(), userType, role, emailCode);
-
-        Map<String, String> result = new HashMap<>();
-        result.put("message", "회원가입 성공");
-        result.put("verifyCode", emailCode); // 개발용, 실제로는 이메일로 전송
-        return result;
-    }
-
-    public Map<String, Object> login(String userid, String rawPassword) {
-        log.info("로그인 시도: {}", userid);
-
-        UserEntity user = userRepository.findByUserid(userid)
-                .orElseThrow(() -> new RuntimeException("존재하지 않는 아이디입니다."));
-
-        if (!passwordEncoder.matches(rawPassword, user.getPassword())) {
-            throw new RuntimeException("비밀번호가 일치하지 않습니다.");
-        }
-
-        // 개발 환경에서는 이메일 인증 체크 비활성화 가능
-        // if (!user.isEmailVerified()) {
-        //     throw new RuntimeException("이메일 인증이 완료되지 않았습니다.");
-        // }
-
-        String token = jwtTokenProvider.createToken(user.getUserid(), user.getRole());
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("token", token);
-        response.put("userid", user.getUserid());
-        response.put("name", user.getName());
-        response.put("email", user.getEmail());
-        response.put("role", user.getRole());
-        response.put("userType", user.getUserType());
-
-        log.info("로그인 성공: {} - Type: {}, Role: {}",
-                userid, user.getUserType(), user.getRole());
-
-        return response;
-    }
-
-    public void verifyEmail(String userid, String code) {
-        log.info("이메일 인증 시도: {}", userid);
-
-        UserEntity user = userRepository.findByUserid(userid)
-                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
-
-        if (!user.getEmailVerifyCode().equals(code)) {
-            throw new RuntimeException("인증 코드가 일치하지 않습니다.");
-        }
-
-        user.setEmailVerified(true);
-        userRepository.save(user);
-
-        log.info("이메일 인증 완료: {}", userid);
-    }
-
-    public UserEntity findByUserid(String userid) {
-        return userRepository.findByUserid(userid)
-                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
-    }
+    /**
+     * 회원 탈퇴
+     * @param userNo 회원 번호
+     */
+    void deleteUser(Long userNo);
 }

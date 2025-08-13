@@ -1,15 +1,9 @@
 package com.people.job.user.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.people.job.job.entity.JobopeningEntity;
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
@@ -18,71 +12,129 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class UserEntity implements UserDetails {
+public class UserEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "user_no")
     private Long userNo;
 
-    @Column(nullable = false, unique = true)
+    @Column(unique = true, nullable = false)
     private String userid;
 
-    @JsonIgnore
     @Column(nullable = false)
     private String password;
 
     @Column(nullable = false)
     private String name;
 
+    @Column(nullable = false)
     private String email;
+
     private String phone;
-    private String zipcode;
     private String address;
-    @Column(name = "address_detail")
-    private String addressDetail;
+    private String detailAddress;
+    private String zipcode;
 
-    @Column(name="user_type")
-    private String userType; // "U" - 개인회원, "C" - 기업회원
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private UserType userType;
 
-    private boolean emailVerified;
-    private String emailVerifyCode;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private UserRole role;
 
-    private String role; // ROLE_USER, ROLE_COMPANY, ROLE_ADMIN
+    @Column(nullable = false)
+    private Boolean isActive = true;
 
-    // 기업회원이 작성한 채용공고 리스트
-    @OneToMany(mappedBy = "company", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<JobopeningEntity> jobopenings = new ArrayList<>();
+    @Column(nullable = false)
+    private Boolean isEmailVerified = false;
 
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(() -> this.role);  // role이 "ROLE_USER" 형태일 경우
+    private String emailVerificationCode;
+
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(nullable = false)
+    private LocalDateTime updatedAt;
+
+    // 새로 추가: 프로필 이미지 관련 필드들
+    private String profileImageUrl;        // 프로필 이미지 URL
+    private String profileImageFilename;   // 원본 파일명
+    private String profileImageStoredName; // 저장된 파일명
+
+    // 기업회원 전용 필드들
+    private String companyName;
+    private String businessNumber;
+    private String companyPhone;
+    private String companyAddress;
+    private String ceoName;
+    private String companyType;
+    private Integer employeeCount;
+    private String establishedYear;
+    private String website;
+    private String companyDescription;
+
+    public enum UserType {
+        INDIVIDUAL, COMPANY
     }
 
-    @Override
-    public String getUsername() {
-        return this.userid;
-
+    public enum UserRole {
+        USER, ADMIN, COMPANY
     }
 
-    @Override
-    public boolean isAccountNonExpired() {
-        return true;
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 
-    @Override
-    public boolean isAccountNonLocked() {
-        return true;
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
     }
 
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
+    // 프로필 이미지 관련 헬퍼 메서드들
+    public boolean hasProfileImage() {
+        return profileImageUrl != null && !profileImageUrl.trim().isEmpty();
     }
 
-    @Override
-    public boolean isEnabled() {
-        return true;
+    public void updateProfileImage(String imageUrl, String filename, String storedName) {
+        this.profileImageUrl = imageUrl;
+        this.profileImageFilename = filename;
+        this.profileImageStoredName = storedName;
     }
 
+    public void clearProfileImage() {
+        this.profileImageUrl = null;
+        this.profileImageFilename = null;
+        this.profileImageStoredName = null;
+    }
+
+    // 회원 정보 업데이트 헬퍼 메서드
+    public void updateBasicInfo(String name, String email, String phone, String address,
+                                String detailAddress, String zipcode) {
+        this.name = name;
+        this.email = email;
+        this.phone = phone;
+        this.address = address;
+        this.detailAddress = detailAddress;
+        this.zipcode = zipcode;
+    }
+
+    // 기업 정보 업데이트 헬퍼 메서드
+    public void updateCompanyInfo(String companyName, String businessNumber, String companyPhone,
+                                  String companyAddress, String ceoName, String companyType,
+                                  Integer employeeCount, String establishedYear, String website,
+                                  String companyDescription) {
+        this.companyName = companyName;
+        this.businessNumber = businessNumber;
+        this.companyPhone = companyPhone;
+        this.companyAddress = companyAddress;
+        this.ceoName = ceoName;
+        this.companyType = companyType;
+        this.employeeCount = employeeCount;
+        this.establishedYear = establishedYear;
+        this.website = website;
+        this.companyDescription = companyDescription;
+    }
 }

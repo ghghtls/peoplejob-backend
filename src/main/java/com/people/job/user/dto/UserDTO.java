@@ -1,57 +1,98 @@
 package com.people.job.user.dto;
 
-// import lombok.*; // 일단 주석처리
+import lombok.*;
 
+import java.time.LocalDateTime;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class UserDTO {
+
+    private Long userNo;
     private String userid;
     private String password;
     private String name;
     private String email;
     private String phone;
-    private String zipcode;
     private String address;
-    private String addressDetail;
+    private String detailAddress;
+    private String zipcode;
     private String userType;
+    private String role;
+    private Boolean isActive;
+    private Boolean isEmailVerified;
 
-    // 수동 생성자
-    public UserDTO() {}
+    // 새로 추가: 프로필 이미지 관련 필드들
+    private String profileImageUrl;
+    private String profileImageFilename;
 
-    // 수동 getter/setter
-    public String getUserid() { return userid; }
-    public void setUserid(String userid) { this.userid = userid; }
+    // 기업회원 전용 필드들
+    private String companyName;
+    private String businessNumber;
+    private String companyPhone;
+    private String companyAddress;
+    private String ceoName;
+    private String companyType;
+    private Integer employeeCount;
+    private String establishedYear;
+    private String website;
+    private String companyDescription;
 
-    public String getPassword() {
-        System.out.println("getPassword 호출: " + password);
-        return password;
+    // 타임스탬프
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+
+    // 프로필 이미지 관련 헬퍼 메서드
+    public boolean hasProfileImage() {
+        return profileImageUrl != null && !profileImageUrl.trim().isEmpty();
     }
-    public void setPassword(String password) {
-        System.out.println("setPassword 호출: " + password);
-        this.password = password;
+
+    // 회원 타입 확인 헬퍼 메서드
+    public boolean isCompany() {
+        return "COMPANY".equals(userType);
     }
 
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    public boolean isIndividual() {
+        return "INDIVIDUAL".equals(userType);
+    }
 
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
+    public boolean isAdmin() {
+        return "ADMIN".equals(role);
+    }
 
-    public String getPhone() { return phone; }
-    public void setPhone(String phone) { this.phone = phone; }
+    // 회원 정보 검증 메서드
+    public boolean isValidForUpdate() {
+        return name != null && !name.trim().isEmpty() &&
+                email != null && !email.trim().isEmpty() &&
+                email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
+    }
 
-    public String getZipcode() { return zipcode; }
-    public void setZipcode(String zipcode) { this.zipcode = zipcode; }
+    // 기업 정보 검증 메서드
+    public boolean isValidCompanyInfo() {
+        if (!isCompany()) return true;
 
-    public String getAddress() { return address; }
-    public void setAddress(String address) { this.address = address; }
+        return companyName != null && !companyName.trim().isEmpty() &&
+                businessNumber != null && !businessNumber.trim().isEmpty() &&
+                ceoName != null && !ceoName.trim().isEmpty();
+    }
 
-    public String getAddressDetail() { return addressDetail; }
-    public void setAddressDetail(String addressDetail) { this.addressDetail = addressDetail; }
+    // 비밀번호 검증을 위한 별도 DTO
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class PasswordChangeRequest {
+        private String currentPassword;
+        private String newPassword;
+        private String confirmPassword;
 
-    public String getUserType() { return userType; }
-    public void setUserType(String userType) { this.userType = userType; }
-
-    @Override
-    public String toString() {
-        return "UserDTO{userid='" + userid + "', password='" + password + "', name='" + name + "'}";
+        public boolean isValid() {
+            return currentPassword != null && !currentPassword.trim().isEmpty() &&
+                    newPassword != null && !newPassword.trim().isEmpty() &&
+                    confirmPassword != null && newPassword.equals(confirmPassword);
+        }
     }
 }
