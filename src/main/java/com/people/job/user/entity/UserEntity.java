@@ -79,6 +79,13 @@ public class UserEntity implements UserDetails {
     private String website;
     private String companyDescription;
 
+    // 이메일 인증 관련 필드들
+    private LocalDateTime emailVerificationExpiry;
+
+    // 비밀번호 재설정 관련 필드들
+    private String passwordResetToken;
+    private LocalDateTime passwordResetExpiry;
+
     public enum UserType {
         INDIVIDUAL, COMPANY
     }
@@ -180,5 +187,26 @@ public class UserEntity implements UserDetails {
         this.establishedYear = establishedYear;
         this.website = website;
         this.companyDescription = companyDescription;
+    }
+
+    // 헬퍼 메서드들
+    public boolean isEmailVerificationExpired() {
+        return emailVerificationExpiry != null &&
+                LocalDateTime.now().isAfter(emailVerificationExpiry);
+    }
+
+    public boolean isPasswordResetExpired() {
+        return passwordResetExpiry != null &&
+                LocalDateTime.now().isAfter(passwordResetExpiry);
+    }
+
+    public void setEmailVerificationCode(String code, int expirationMinutes) {
+        this.emailVerificationCode = code;
+        this.emailVerificationExpiry = LocalDateTime.now().plusMinutes(expirationMinutes);
+    }
+
+    public void setPasswordResetToken(String token, int expirationMinutes) {
+        this.passwordResetToken = token;
+        this.passwordResetExpiry = LocalDateTime.now().plusMinutes(expirationMinutes);
     }
 }
