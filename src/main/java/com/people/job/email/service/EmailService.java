@@ -9,6 +9,8 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -108,5 +110,28 @@ public class EmailService {
             log.error("이메일 발송 실패: {} - {}", to, subject, e);
             return CompletableFuture.completedFuture(false);
         }
+    }
+
+    /**
+     * 이메일 템플릿 렌더링 (공통 메서드)
+     */
+    public String renderTemplate(String templateName, Context context) {
+        try {
+            return templateEngine.process(templateName, context);
+        } catch (Exception e) {
+            log.error("템플릿 렌더링 실패: {}", templateName, e);
+            return null;
+        }
+    }
+
+    /**
+     * 이메일 유효성 검사
+     */
+    public boolean isValidEmail(String email) {
+        if (email == null || email.trim().isEmpty()) {
+            return false;
+        }
+        String emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
+        return email.matches(emailRegex);
     }
 }
