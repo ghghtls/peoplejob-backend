@@ -1,0 +1,78 @@
+# 테스트 환경 전용 설정
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        show_sql: false
+        format_sql: false
+        dialect: org.hibernate.dialect.H2Dialect
+    open-in-view: false
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  # 테스트용 Redis (임베디드)
+  data:
+    redis:
+      host: localhost
+      port: 6370  # 다른 포트 사용
+      timeout: 1000ms
+
+  # 이메일 테스트 설정 (실제 발송 안함)
+  mail:
+    host: localhost
+    port: 25
+    username: test
+    password: test
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+
+  # 캐시 비활성화 (테스트 격리)
+  cache:
+    type: none
+
+# 테스트용 JWT 설정
+jwt:
+  secret: test-jwt-secret-key-for-unit-testing-only-must-be-32-chars
+  expiration-ms: 3600000  # 1시간
+
+# 테스트용 파일 업로드
+file:
+  upload:
+    path: ./test-uploads
+    url: http://localhost:8080/test-uploads
+    max-size: 5MB
+
+# 로깅 최소화
+logging:
+  level:
+    root: WARN
+    com.people.job: INFO
+    org.springframework.test: INFO
+    org.hibernate.SQL: WARN
+  pattern:
+    console: "%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n"
+
+# 액추에이터 테스트 설정
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always

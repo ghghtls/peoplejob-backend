@@ -41,3 +41,39 @@ mysql-data/
 
 src/main/resources/application.yml
 src/main/resources/application-*.yml
+
+# ==================== CI/CD 추가 부분 ====================
+
+# Docker 관련
+.dockerignore
+
+# Redis 데이터 디렉토리
+redis-data/
+
+# 로그 파일들
+logs/
+*.log
+
+# 업로드 파일들
+uploads/
+test-uploads/
+
+# CI/CD 임시 파일들
+.github/secrets/
+*.tmp
+*.cache
+
+# 코드 품질 검사 결과
+target/site/
+target/jacoco/
+target/spotbugs/
+target/checkstyle/
+
+# 성능 테스트 결과
+target/jmeter/
+
+# AWS CLI 설정 (보안)
+.aws/
+
+# Docker 볼륨 데이터
+volumes/
