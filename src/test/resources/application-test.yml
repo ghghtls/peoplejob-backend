@@ -1,11 +1,13 @@
 # 테스트 환경 전용 설정
 spring:
+  # 데이터베이스 설정 (H2 인메모리)
   datasource:
     url: jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     driver-class-name: org.h2.Driver
     username: sa
     password: ""
 
+  # JPA/Hibernate 설정
   jpa:
     hibernate:
       ddl-auto: create-drop
@@ -14,19 +16,26 @@ spring:
         show_sql: false
         format_sql: false
         dialect: org.hibernate.dialect.H2Dialect
+        use_sql_comments: false
     open-in-view: false
 
+  # H2 콘솔 설정
   h2:
     console:
       enabled: true
       path: /h2-console
 
-  # 테스트용 Redis (임베디드)
+  # 테스트용 Redis 설정
   data:
     redis:
       host: localhost
-      port: 6370  # 다른 포트 사용
+      port: 6370
       timeout: 1000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
 
   # 이메일 테스트 설정 (실제 발송 안함)
   mail:
@@ -34,28 +43,88 @@ spring:
     port: 25
     username: test
     password: test
+    protocol: smtp
+    test-connection: false
     properties:
       mail:
         smtp:
           auth: false
           starttls:
             enable: false
+          ssl:
+            enable: false
 
   # 캐시 비활성화 (테스트 격리)
   cache:
     type: none
 
+  # 서블릿 설정
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+      enabled: true
+
+  # 프로파일 설정
+  profiles:
+    active: test
+
+  # JSON 설정
+  jackson:
+    time-zone: Asia/Seoul
+    date-format: yyyy-MM-dd HH:mm:ss
+
 # 테스트용 JWT 설정
 jwt:
-  secret: test-jwt-secret-key-for-unit-testing-only-must-be-32-chars
+  secret: test-jwt-secret-key-for-unit-testing-only-must-be-32-chars-long
   expiration-ms: 3600000  # 1시간
+  refresh-expiration-ms: 86400000  # 24시간
 
-# 테스트용 파일 업로드
+# 테스트용 파일 업로드 설정
 file:
   upload:
     path: ./test-uploads
     url: http://localhost:8080/test-uploads
     max-size: 5MB
+    allowed-extensions: jpg,jpeg,png,gif,pdf,doc,docx,txt,hwp
+    image-extensions: jpg,jpeg,png,gif
+
+# 테스트용 결제 설정
+payment:
+  test-mode: true
+  api-key: test-api-key
+  secret-key: test-secret-key
+  webhook-url: http://localhost:8080/api/payments/webhook
+
+# 테스트용 알림 설정
+notification:
+  enabled: false
+  email:
+    enabled: false
+  sms:
+    enabled: false
+  push:
+    enabled: false
+
+# 테스트용 스케줄러 설정
+scheduler:
+  enabled: false
+  job-cleanup:
+    enabled: false
+  token-cleanup:
+    enabled: false
+  notification-batch:
+    enabled: false
+
+# 테스트용 보안 설정
+security:
+  cors:
+    allowed-origins: http://localhost:3000,http://localhost:8080
+    allowed-methods: GET,POST,PUT,PATCH,DELETE,OPTIONS
+    allowed-headers: "*"
+    allow-credentials: true
+  csrf:
+    enabled: false
 
 # 로깅 최소화
 logging:
@@ -64,15 +133,172 @@ logging:
     com.people.job: INFO
     org.springframework.test: INFO
     org.hibernate.SQL: WARN
+    org.hibernate.type: WARN
+    org.springframework.web: WARN
+    org.springframework.security: WARN
+    com.zaxxer.hikari: WARN
+    org.apache.http: WARN
   pattern:
-    console: "%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n"
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
 
 # 액추에이터 테스트 설정
 management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,metrics,env
+      base-path: /actuator
   endpoint:
     health:
       show-details: always
+      show-components: always
+    info:
+      enabled: true
+  health:
+    redis:
+      enabled: true
+    db:
+      enabled: true
+
+# 테스트용 API 설정
+api:
+  version: v1
+  base-path: /api
+  documentation:
+    enabled: false
+
+# 테스트용 외부 API 설정
+external-api:
+  job-search:
+    enabled: false
+    base-url: http://mock-api.test
+    api-key: test-key
+  payment-gateway:
+    enabled: false
+    base-url: http://mock-payment.test
+    merchant-id: test-merchant
+
+# 테스트용 비즈니스 로직 설정
+business:
+  job:
+    auto-expire-days: 30
+    max-applications-per-user: 100
+  user:
+    verification-code-expire-minutes: 30
+    password-reset-expire-minutes: 60
+    max-login-attempts: 5
+  file:
+    cleanup-interval-hours: 24
+    temp-file-expire-hours: 2
+
+# 테스트용 이메일 템플릿 설정
+email:
+  templates:
+    verification: email/verification
+    password-reset: email/password-reset
+    job-application: email/job-application
+    job-status-update: email/job-status-update
+  from:
+    address: noreply@test.com
+    name: PeopleJob Test
+
+# 테스트용 메시지 설정
+message:
+  encoding: UTF-8
+  basename: messages
+  cache-duration: 3600
+
+# 테스트용 세션 설정
+session:
+  timeout: 1800  # 30분
+  redis:
+    namespace: test:session
+
+# 테스트용 Rate Limiting 설정
+rate-limit:
+  enabled: false
+  default-limit: 1000
+  window-size: 3600
+
+# 테스트용 데이터 검증 설정
+validation:
+  user:
+    userid:
+      min-length: 4
+      max-length: 20
+      pattern: "^[a-zA-Z0-9_]+$"
+    password:
+      min-length: 8
+      max-length: 50
+      require-special-char: true
+    email:
+      max-length: 100
+  job:
+    title:
+      max-length: 100
+    content:
+      max-length: 5000
+  file:
+    filename:
+      max-length: 255
+
+# 테스트용 국제화 설정
+internationalization:
+  default-locale: ko_KR
+  supported-locales: ko_KR,en_US
+
+# 테스트용 애플리케이션 메타데이터
+app:
+  name: PeopleJob Backend Test
+  version: 1.0.0-TEST
+  description: PeopleJob Backend Test Environment
+  build-time: ${maven.build.timestamp:unknown}
+
+# 테스트용 Swagger/OpenAPI 설정
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+# 테스트용 모니터링 설정
+monitoring:
+  metrics:
+    enabled: false
+  tracing:
+    enabled: false
+
+# 테스트 전용 Mock 설정
+mock:
+  external-apis: true
+  email-service: true
+  payment-service: true
+  file-service: false
+  notification-service: true
+
+# 테스트 데이터 설정
+test-data:
+  auto-create: true
+  cleanup-after-test: true
+  sample-users: 10
+  sample-jobs: 20
+  sample-applications: 50
+
+# 테스트용 트랜잭션 설정
+transaction:
+  default-timeout: 30
+  rollback-on-commit-failure: true
+
+# 테스트용 배치 작업 설정
+batch:
+  job:
+    enabled: false
+  chunk-size: 100
+
+# 테스트용 웹 설정
+web:
+  cors:
+    max-age: 3600
+  compression:
+    enabled: false

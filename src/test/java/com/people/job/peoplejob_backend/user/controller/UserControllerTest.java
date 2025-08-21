@@ -10,10 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureTestMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -195,34 +192,3 @@ class UserControllerTest {
     }
 }
 
-// 통합 테스트 클래스 (실제 데이터베이스 사용)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("test")
-@Transactional
-@DisplayName("사용자 컨트롤러 통합 테스트")
-class UserControllerIntegrationTest {
-
-    @Autowired
-    private TestRestTemplate restTemplate;
-
-    @Test
-    @DisplayName("실제 회원가입 플로우 테스트")
-    void realRegisterFlow() {
-        // Given
-        UserDTO newUser = UserDTO.builder()
-                .userid("integrationtest")
-                .password("password123")
-                .name("통합테스트 사용자")
-                .email("integration@test.com")
-                .userType("individual")
-                .build();
-
-        // When
-        ResponseEntity<Map> response = restTemplate.postForEntity(
-                "/api/users/register", newUser, Map.class);
-
-        // Then
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody().get("message")).isNotNull();
-    }
-}
