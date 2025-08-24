@@ -1,21 +1,14 @@
 package com.people.job.peoplejob_backend.mypage.controller;
 
-import jakarta.transaction.Transactional;
-import org.junit.jupiter.api.DisplayName;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-
-public class MypageControllerTest {
-}
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.people.job.mypage.service.MypageService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureTestMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,14 +16,17 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.mockito.ArgumentMatchers.*;
-        import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-        import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
-@AutoConfigureTestMvc
+@AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
 @DisplayName("마이페이지 컨트롤러 테스트")
@@ -63,9 +59,9 @@ class MypageControllerTest {
         mockMvc.perform(get("/api/mypage/dashboard/{userNo}", 1L))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalApplications").value(15L))
-                .andExpect(jsonPath("$.pendingApplications").value(5L))
-                .andExpect(jsonPath("$.totalScraps").value(20L));
+                .andExpect(jsonPath("$.totalApplications").value(15))
+                .andExpect(jsonPath("$.pendingApplications").value(5))
+                .andExpect(jsonPath("$.totalScraps").value(20));
     }
 
     @Test
@@ -125,7 +121,7 @@ class MypageControllerTest {
 
         // When & Then
         mockMvc.perform(put("/api/mypage/notifications/{userNo}", 1L)
-                        .contentType("application/json")
+                        .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(newSettings)))
                 .andDo(print())
                 .andExpect(status().isOk())
