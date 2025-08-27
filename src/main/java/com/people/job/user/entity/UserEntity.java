@@ -6,6 +6,8 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDate;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
@@ -23,49 +25,55 @@ public class UserEntity implements UserDetails {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long userNo;
 
-    @Column(unique = true, nullable = false)
+    @Column(length = 50, unique = true, nullable = false)
     private String userid;
 
-    @Column(nullable = false)
+    @Column(length = 255, nullable = false)
     private String password;
 
-    @Column(nullable = false)
-    private String name;
+    @Column(length = 50, nullable = false)
+    private String username; // DB 스키마의 username 필드와 맞춤
 
-    @Column(nullable = false)
+    @Column(length = 100, nullable = false)
     private String email;
 
+    @Column(length = 20)
     private String phone;
+
+    @Column(length = 200)
     private String address;
-    private String detailAddress;
-    private String zipcode;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UserType userType;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private UserRole role;
+    private LocalDate regdate; // DB 스키마의 DATE 타입과 맞춤
 
     @Column(nullable = false)
     private Boolean isActive = true;
 
-    @Column(nullable = false)
+    // 추가 필드들 (실제 서비스에서 필요한 것들)
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private UserRole role = UserRole.USER;
+
+    @Builder.Default
     private Boolean isEmailVerified = false;
 
     private String emailVerificationCode;
+    private LocalDateTime emailVerificationExpiry;
+    private String passwordResetToken;
+    private LocalDateTime passwordResetExpiry;
 
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    // 프로필 이미지 관련
+    private String profileImageUrl;
+    private String profileImageFilename;
+    private String profileImageStoredName;
 
-    @Column(nullable = false)
-    private LocalDateTime updatedAt;
-
-    // 새로 추가: 프로필 이미지 관련 필드들
-    private String profileImageUrl;        // 프로필 이미지 URL
-    private String profileImageFilename;   // 원본 파일명
-    private String profileImageStoredName; // 저장된 파일명
+    // 주소 상세 정보
+    private String detailAddress;
+    private String zipcode;
 
     // 기업회원 전용 필드들
     private String companyName;
@@ -79,12 +87,10 @@ public class UserEntity implements UserDetails {
     private String website;
     private String companyDescription;
 
-    // 이메일 인증 관련 필드들
-    private LocalDateTime emailVerificationExpiry;
-
-    // 비밀번호 재설정 관련 필드들
-    private String passwordResetToken;
-    private LocalDateTime passwordResetExpiry;
+    // Timestamp 필드들
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     public enum UserType {
         INDIVIDUAL, COMPANY
@@ -108,7 +114,12 @@ public class UserEntity implements UserDetails {
 
     @Override
     public String getUsername() {
-        return email; // 이메일을 username으로 사용
+        return email; // 로그인에는 email 사용
+    }
+
+    // 실제 사용자 이름은 getUserRealName() 메서드로 제공
+    public String getUserRealName() {
+        return username;
     }
 
     @Override
@@ -118,7 +129,7 @@ public class UserEntity implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return isActive; // 활성 상태가 계정 잠금과 연관
+        return isActive;
     }
 
     @Override
@@ -128,15 +139,25 @@ public class UserEntity implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return isActive && isEmailVerified; // 활성화되고 이메일 인증된 경우만 활성
+        return isActive && isEmailVerified;
     }
 
-    // ========== 기존 메서드들 ==========
+    // ========== JPA 콜백 메서드 ==========
 
     @PrePersist
     protected void onCreate() {
+        this.regdate = LocalDate.now();
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
+        if (this.isActive == null) {
+            this.isActive = true;
+        }
+        if (this.isEmailVerified == null) {
+            this.isEmailVerified = false;
+        }
+        if (this.role == null) {
+            this.role = UserRole.USER;
+        }
     }
 
     @PreUpdate
@@ -144,7 +165,8 @@ public class UserEntity implements UserDetails {
         this.updatedAt = LocalDateTime.now();
     }
 
-    // 프로필 이미지 관련 헬퍼 메서드들
+    // ========== 헬퍼 메서드들 ==========
+
     public boolean hasProfileImage() {
         return profileImageUrl != null && !profileImageUrl.trim().isEmpty();
     }
@@ -161,10 +183,9 @@ public class UserEntity implements UserDetails {
         this.profileImageStoredName = null;
     }
 
-    // 회원 정보 업데이트 헬퍼 메서드
-    public void updateBasicInfo(String name, String email, String phone, String address,
+    public void updateBasicInfo(String username, String email, String phone, String address,
                                 String detailAddress, String zipcode) {
-        this.name = name;
+        this.username = username;
         this.email = email;
         this.phone = phone;
         this.address = address;
@@ -172,7 +193,6 @@ public class UserEntity implements UserDetails {
         this.zipcode = zipcode;
     }
 
-    // 기업 정보 업데이트 헬퍼 메서드
     public void updateCompanyInfo(String companyName, String businessNumber, String companyPhone,
                                   String companyAddress, String ceoName, String companyType,
                                   Integer employeeCount, String establishedYear, String website,
@@ -189,7 +209,6 @@ public class UserEntity implements UserDetails {
         this.companyDescription = companyDescription;
     }
 
-    // 헬퍼 메서드들
     public boolean isEmailVerificationExpired() {
         return emailVerificationExpiry != null &&
                 LocalDateTime.now().isAfter(emailVerificationExpiry);

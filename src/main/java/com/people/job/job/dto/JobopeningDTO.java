@@ -24,7 +24,7 @@ public class JobopeningDTO {
     private String experience;
     private String education;
     private LocalDate deadline;
-    private LocalDateTime regdate;
+    private LocalDate regdate; // DB 스키마와 맞춤 (LocalDate 타입)
     private LocalDateTime updatedAt;
     private Integer viewCount;
     private Boolean isActive;
@@ -50,18 +50,18 @@ public class JobopeningDTO {
                 .experience(entity.getExperience())
                 .education(entity.getEducation())
                 .deadline(entity.getDeadline())
-                .regdate(entity.getRegdate())
+                .regdate(entity.getRegdate()) // LocalDate 타입
                 .updatedAt(entity.getUpdatedAt())
                 .viewCount(entity.getViewCount())
                 .isActive(entity.getIsActive())
                 .userNo(entity.getUserNo())
 
                 // 상태 관리 정보
-                .status(entity.getStatus().name())
-                .statusDescription(entity.getStatus().getDescription())
+                .status(entity.getStatus() != null ? entity.getStatus().name() : "DRAFT")
+                .statusDescription(entity.getStatus() != null ? entity.getStatus().getDescription() : "임시저장")
                 .canEdit(entity.canBeEdited())
                 .canPublish(entity.canBePublished())
-                .canDelete(entity.isDraft() || entity.getStatus() == JobopeningEntity.JobStatus.REJECTED)
+                .canDelete(entity.isDraft() || (entity.getStatus() != null && entity.getStatus() == JobopeningEntity.JobStatus.REJECTED))
                 .isExpired(entity.isDeadlinePassed())
                 .build();
     }

@@ -2,6 +2,7 @@ package com.people.job.user.dto;
 
 import lombok.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Getter
@@ -14,7 +15,7 @@ public class UserDTO {
     private Long userNo;
     private String userid;
     private String password;
-    private String name;
+    private String username; // DB 스키마와 맞춤 (name -> username)
     private String email;
     private String phone;
     private String address;
@@ -22,10 +23,11 @@ public class UserDTO {
     private String zipcode;
     private String userType;
     private String role;
+    private LocalDate regdate; // DB 스키마와 맞춤 (DATE 타입)
     private Boolean isActive;
     private Boolean isEmailVerified;
 
-    // 새로 추가: 프로필 이미지 관련 필드들
+    // 프로필 이미지 관련 필드들
     private String profileImageUrl;
     private String profileImageFilename;
 
@@ -65,7 +67,7 @@ public class UserDTO {
 
     // 회원 정보 검증 메서드
     public boolean isValidForUpdate() {
-        return name != null && !name.trim().isEmpty() &&
+        return username != null && !username.trim().isEmpty() &&
                 email != null && !email.trim().isEmpty() &&
                 email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
     }

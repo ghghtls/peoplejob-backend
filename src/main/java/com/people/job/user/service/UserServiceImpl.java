@@ -36,26 +36,86 @@ public class UserServiceImpl implements UserService {
     @Value("${server.base-url:http://localhost:8080}")
     private String baseUrl;
 
-    // 기존 메서드들은 생략 (register, login, verifyEmail, findByUserid)
-
     @Override
     public Map<String, String> register(UserDTO dto) {
-        return Map.of();
+        // 기본 회원가입 로직 구현 필요
+        try {
+            // 아이디 중복 확인
+            if (userRepository.findByUserid(dto.getUserid()).isPresent()) {
+                throw new RuntimeException("이미 사용중인 아이디입니다.");
+            }
+
+            // 이메일 중복 확인
+            if (userRepository.findByEmail(dto.getEmail()).isPresent()) {
+                throw new RuntimeException("이미 사용중인 이메일입니다.");
+            }
+
+            // UserEntity 생성
+            UserEntity user = UserEntity.builder()
+                    .userid(dto.getUserid())
+                    .password(passwordEncoder.encode(dto.getPassword()))
+                    .username(dto.getUsername()) // name -> username으로 수정
+                    .email(dto.getEmail())
+                    .phone(dto.getPhone())
+                    .address(dto.getAddress())
+                    .userType(UserEntity.UserType.valueOf(dto.getUserType()))
+                    .role(UserEntity.UserRole.USER)
+                    .isActive(true)
+                    .isEmailVerified(false)
+                    .build();
+
+            userRepository.save(user);
+            log.info("회원가입 완료 - userid: {}", dto.getUserid());
+
+            return Map.of("message", "회원가입이 완료되었습니다.");
+        } catch (Exception e) {
+            log.error("회원가입 실패", e);
+            throw new RuntimeException(e.getMessage());
+        }
     }
 
     @Override
     public Map<String, Object> login(String userid, String password) {
-        return Map.of();
+        try {
+            UserEntity user = userRepository.findByUserid(userid)
+                    .orElseThrow(() -> new RuntimeException("존재하지 않는 아이디입니다."));
+
+            if (!passwordEncoder.matches(password, user.getPassword())) {
+                throw new RuntimeException("비밀번호가 일치하지 않습니다.");
+            }
+
+            if (!user.getIsActive()) {
+                throw new RuntimeException("비활성화된 계정입니다.");
+            }
+
+            log.info("로그인 성공 - userid: {}", userid);
+
+            return Map.of(
+                    "message", "로그인 성공",
+                    "user", convertToDTO(user)
+            );
+        } catch (Exception e) {
+            log.error("로그인 실패", e);
+            throw new RuntimeException(e.getMessage());
+        }
     }
 
     @Override
     public void verifyEmail(String userid, String code) {
+        UserEntity user = userRepository.findByUserid(userid)
+                .orElseThrow(() -> new RuntimeException("존재하지 않는 사용자입니다."));
 
+        // 이메일 인증 로직 구현 필요
+        user.setIsEmailVerified(true);
+        userRepository.save(user);
+
+        log.info("이메일 인증 완료 - userid: {}", userid);
     }
 
     @Override
     public UserEntity findByUserid(String userid) {
-        return null;
+        return userRepository.findByUserid(userid)
+                .orElseThrow(() -> new RuntimeException("존재하지 않는 사용자입니다."));
     }
 
     @Override
@@ -72,9 +132,9 @@ public class UserServiceImpl implements UserService {
         UserEntity user = userRepository.findById(userNo)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
 
-        // 기본 정보 업데이트
+        // 기본 정보 업데이트 - name -> username으로 수정
         user.updateBasicInfo(
-                dto.getName(),
+                dto.getUsername(), // name -> username으로 수정
                 dto.getEmail(),
                 dto.getPhone(),
                 dto.getAddress(),
@@ -213,7 +273,7 @@ public class UserServiceImpl implements UserService {
         }
 
         if (!password.matches(".*[a-z].*")) {
-            throw new RuntimeException("비밀번호는 소문자를 포함해야 합니다.");
+            throw new RuntimeException("비밀번로는 소문자를 포함해야 합니다.");
         }
 
         if (!password.matches(".*[0-9].*")) {
@@ -254,7 +314,7 @@ public class UserServiceImpl implements UserService {
         return UserDTO.builder()
                 .userNo(user.getUserNo())
                 .userid(user.getUserid())
-                .name(user.getName())
+                .username(user.getUserRealName()) // getUserRealName() 메서드 사용
                 .email(user.getEmail())
                 .phone(user.getPhone())
                 .address(user.getAddress())
@@ -262,6 +322,7 @@ public class UserServiceImpl implements UserService {
                 .zipcode(user.getZipcode())
                 .userType(user.getUserType().name())
                 .role(user.getRole().name())
+                .regdate(user.getRegdate()) // LocalDate 타입
                 .isActive(user.getIsActive())
                 .isEmailVerified(user.getIsEmailVerified())
                 .profileImageUrl(user.getProfileImageUrl())

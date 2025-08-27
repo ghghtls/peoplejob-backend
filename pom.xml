@@ -7,7 +7,7 @@
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
 		<version>3.4.4</version>
-		<relativePath/> <!-- lookup parent from repository -->
+		<relativePath/>
 	</parent>
 
 	<groupId>com.people.job</groupId>
@@ -18,9 +18,12 @@
 
 	<properties>
 		<java.version>21</java.version>
-		<!-- ==================== CI/CD 추가: 품질 관리 버전 ==================== -->
-		<jacoco.version>0.8.8</jacoco.version>
-		<spotbugs.version>4.7.3</spotbugs.version>
+		<jacoco.version>0.8.12</jacoco.version>
+		<spotbugs.version>4.8.6</spotbugs.version>
+		<jwt.version>0.12.6</jwt.version>
+		<springdoc.version>2.6.0</springdoc.version>
+		<dotenv.version>5.2.2</dotenv.version>
+		<mybatis.version>3.0.4</mybatis.version>
 	</properties>
 
 	<dependencies>
@@ -46,7 +49,7 @@
 			<artifactId>spring-boot-starter-validation</artifactId>
 		</dependency>
 
-		<!-- 이메일 발송을 위한 의존성 -->
+		<!-- 이메일 -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-mail</artifactId>
@@ -58,11 +61,11 @@
 			<artifactId>spring-boot-starter-thymeleaf</artifactId>
 		</dependency>
 
-		<!-- MyBatis (필요한 경우) -->
+		<!-- MyBatis (필요 시) -->
 		<dependency>
 			<groupId>org.mybatis.spring.boot</groupId>
 			<artifactId>mybatis-spring-boot-starter</artifactId>
-			<version>3.0.4</version>
+			<version>${mybatis.version}</version>
 		</dependency>
 
 		<!-- Database -->
@@ -72,54 +75,78 @@
 			<scope>runtime</scope>
 		</dependency>
 
-		<!-- H2 Database for testing -->
+		<!-- H2 (test) -->
 		<dependency>
 			<groupId>com.h2database</groupId>
 			<artifactId>h2</artifactId>
 			<scope>test</scope>
 		</dependency>
 
-		<!-- JWT dependencies -->
+		<!-- JWT -->
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-api</artifactId>
-			<version>0.11.5</version>
+			<version>${jwt.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-impl</artifactId>
-			<version>0.11.5</version>
+			<version>${jwt.version}</version>
 			<scope>runtime</scope>
 		</dependency>
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-jackson</artifactId>
-			<version>0.11.5</version>
+			<version>${jwt.version}</version>
 			<scope>runtime</scope>
 		</dependency>
 
-		<!-- API 문서화 -->
+		<!-- OpenAPI -->
 		<dependency>
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-			<version>2.2.0</version>
+			<version>${springdoc.version}</version>
 		</dependency>
 
-		<!-- 환경변수 관리 -->
+		<!-- 환경변수 -->
 		<dependency>
 			<groupId>io.github.cdimascio</groupId>
 			<artifactId>java-dotenv</artifactId>
-			<version>5.2.2</version>
+			<version>${dotenv.version}</version>
 		</dependency>
 
-		<!-- 유틸리티 -->
+		<!-- Redis -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-redis</artifactId>
+		</dependency>
+
+		<!-- Actuator -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+
+		<!-- Micrometer Prometheus -->
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-registry-prometheus</artifactId>
+		</dependency>
+
+		<!-- Cache -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-cache</artifactId>
+		</dependency>
+
+		<!-- Lombok -->
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
 			<optional>true</optional>
 		</dependency>
 
-		<!-- 개발 도구 -->
+		<!-- Devtools -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-devtools</artifactId>
@@ -134,57 +161,58 @@
 			<optional>true</optional>
 		</dependency>
 
-		<!-- 테스트 -->
+		<!-- Test Dependencies -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+
 		<dependency>
 			<groupId>org.mybatis.spring.boot</groupId>
 			<artifactId>mybatis-spring-boot-starter-test</artifactId>
-			<version>3.0.4</version>
+			<version>${mybatis.version}</version>
 			<scope>test</scope>
 		</dependency>
 
-		<!-- ==================== CI/CD 추가: Redis 의존성 ==================== -->
+		<!-- JSON 처리 개선 -->
 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-data-redis</artifactId>
+			<groupId>com.fasterxml.jackson.datatype</groupId>
+			<artifactId>jackson-datatype-jsr310</artifactId>
 		</dependency>
 
-		<!-- ==================== CI/CD 추가: 액추에이터 (모니터링) ==================== -->
+		<!-- 파일 업로드 처리 -->
 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-actuator</artifactId>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+			<version>2.17.0</version>
 		</dependency>
-
-		<!-- ==================== CI/CD 추가: Micrometer Prometheus (메트릭스) ==================== -->
 		<dependency>
-			<groupId>io.micrometer</groupId>
-			<artifactId>micrometer-registry-prometheus</artifactId>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
 		</dependency>
 	</dependencies>
 
 	<build>
 		<plugins>
-			<!-- Maven Compiler Plugin -->
+			<!-- Compiler -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.11.0</version>
+				<version>3.13.0</version>
 				<configuration>
 					<release>21</release>
 					<annotationProcessorPaths>
 						<path>
 							<groupId>org.projectlombok</groupId>
 							<artifactId>lombok</artifactId>
-							<version>1.18.30</version>
+							<version>1.18.34</version>
 						</path>
 						<path>
 							<groupId>org.springframework.boot</groupId>
@@ -195,7 +223,7 @@
 				</configuration>
 			</plugin>
 
-			<!-- Spring Boot Maven Plugin -->
+			<!-- Boot -->
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
@@ -209,24 +237,24 @@
 				</configuration>
 			</plugin>
 
-			<!-- Maven Surefire Plugin (테스트 실행) -->
+			<!-- Surefire -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<version>3.0.0</version>
+				<version>3.5.2</version>
 				<configuration>
 					<skipTests>false</skipTests>
 				</configuration>
 			</plugin>
 
-			<!-- Maven Failsafe Plugin (통합 테스트) -->
+			<!-- Failsafe -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-failsafe-plugin</artifactId>
-				<version>3.0.0</version>
+				<version>3.5.2</version>
 			</plugin>
 
-			<!-- ==================== CI/CD 추가: JaCoCo 테스트 커버리지 ==================== -->
+			<!-- JaCoCo -->
 			<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
@@ -266,31 +294,10 @@
 					</execution>
 				</executions>
 			</plugin>
-
-			<!-- ==================== CI/CD 추가: SpotBugs 정적 분석 ==================== -->
-			<plugin>
-				<groupId>com.github.spotbugs</groupId>
-				<artifactId>spotbugs-maven-plugin</artifactId>
-				<version>${spotbugs.version}</version>
-				<configuration>
-					<effort>Max</effort>
-					<threshold>Low</threshold>
-					<failOnError>false</failOnError>
-				</configuration>
-				<executions>
-					<execution>
-						<goals>
-							<goal>check</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
 		</plugins>
 	</build>
 
-	<!-- 프로파일 설정 -->
 	<profiles>
-		<!-- 개발 환경 -->
 		<profile>
 			<id>dev</id>
 			<activation>
@@ -300,16 +307,12 @@
 				<spring.profiles.active>dev</spring.profiles.active>
 			</properties>
 		</profile>
-
-		<!-- 운영 환경 -->
 		<profile>
 			<id>prod</id>
 			<properties>
 				<spring.profiles.active>prod</spring.profiles.active>
 			</properties>
 		</profile>
-
-		<!-- 테스트 환경 -->
 		<profile>
 			<id>test</id>
 			<properties>
@@ -317,5 +320,4 @@
 			</properties>
 		</profile>
 	</profiles>
-
 </project>

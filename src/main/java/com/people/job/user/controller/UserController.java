@@ -71,7 +71,7 @@ public class UserController {
         }
     }
 
-    // ============ 새로 추가: 회원 정보 관리 API ============
+    // ============ 회원 정보 관리 API ============
 
     // 회원 정보 조회
     @GetMapping("/profile/{userNo}")
@@ -93,7 +93,7 @@ public class UserController {
             @PathVariable Long userNo,
             @RequestBody UserDTO dto
     ) {
-        log.info("회원 정보 수정 요청 - userNo: {}, name: {}", userNo, dto.getName());
+        log.info("회원 정보 수정 요청 - userNo: {}, username: {}", userNo, dto.getUsername()); // name -> username으로 수정
 
         try {
             UserDTO updatedUser = userService.updateUserProfile(userNo, dto);

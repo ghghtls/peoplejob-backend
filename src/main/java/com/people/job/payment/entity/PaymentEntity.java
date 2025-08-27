@@ -3,7 +3,8 @@ package com.people.job.payment.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDate;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "payment")
@@ -18,14 +19,30 @@ public class PaymentEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long paymentNo;
 
-    private Long userNo;         // 기업회원 번호
-    private Long jobopeningNo;   // 광고할 공고 번호
+    @Column(nullable = false)
+    private Long userNo;
 
-    private String productName;  // 광고 상품명
-    private int price;
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal amount; // DB 스키마의 DECIMAL(10,2)와 맞춤
 
-    private LocalDate startDate;
-    private LocalDate endDate;
+    @Column(length = 50, nullable = false)
+    private String paymentMethod;
 
-    private String status;       // "PAID", "CANCELLED"
+    @Column(length = 20, nullable = false)
+    @Builder.Default
+    private String paymentStatus = "PENDING"; // PENDING, SUCCESS, FAILED, CANCELED
+
+    @Column(nullable = false)
+    private LocalDateTime paymentDate; // DB 스키마의 TIMESTAMP와 맞춤
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    @PrePersist
+    protected void onCreate() {
+        this.paymentDate = LocalDateTime.now();
+        if (this.paymentStatus == null) {
+            this.paymentStatus = "PENDING";
+        }
+    }
 }

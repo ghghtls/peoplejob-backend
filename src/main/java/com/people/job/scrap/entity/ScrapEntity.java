@@ -6,7 +6,8 @@ import lombok.*;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "scrap")
+@Table(name = "scrap",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"userNo", "jobNo"}))
 @Getter
 @Setter
 @NoArgsConstructor
@@ -18,8 +19,17 @@ public class ScrapEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long scrapNo;
 
+    @Column(nullable = false)
     private Long userNo;
-    private Long jobopeningNo;
 
-    private LocalDate regdate;
+    @Column(nullable = false)
+    private Long jobNo; // DB 스키마에 맞춤 (jobopeningNo -> jobNo)
+
+    @Column(nullable = false)
+    private LocalDate scrapDate; // DB 스키마에 맞춤 (regdate -> scrapDate)
+
+    @PrePersist
+    protected void onCreate() {
+        this.scrapDate = LocalDate.now();
+    }
 }

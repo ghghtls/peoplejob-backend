@@ -18,8 +18,30 @@ public class ApplyEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long applyNo;
 
-    private Long resumeNo;      // 지원한 이력서 번호
-    private Long jobopeningNo;  // 지원한 채용공고 번호
+    @Column(nullable = false)
+    private Long jobNo; // DB 스키마에 맞춤 (jobopeningNo -> jobNo)
 
-    private LocalDate regdate;
+    @Column(nullable = false)
+    private Long userNo; // 지원자 ID
+
+    @Column(nullable = false)
+    private Long resumeNo; // 사용한 이력서 ID
+
+    @Column(nullable = false)
+    private LocalDate applyDate; // DB 스키마의 applyDate와 맞춤
+
+    @Column(length = 20, nullable = false)
+    @Builder.Default
+    private String status = "PENDING"; // PENDING, REVIEWED, ACCEPTED, REJECTED
+
+    @Column(columnDefinition = "TEXT")
+    private String message; // 지원 메시지
+
+    @PrePersist
+    protected void onCreate() {
+        this.applyDate = LocalDate.now();
+        if (this.status == null) {
+            this.status = "PENDING";
+        }
+    }
 }
