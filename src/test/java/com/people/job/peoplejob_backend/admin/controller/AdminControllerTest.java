@@ -1,314 +1,272 @@
-package com.people.job.admin.controller;
+package com.people.job.peoplejob_backend.admin.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.people.job.admin.controller.AdminController;
 import com.people.job.admin.dto.DashboardDTO;
 import com.people.job.admin.service.AdminService;
+import com.people.job.admin.service.ExcelService;
+import com.people.job.inquiry.dto.InquiryDTO;
+import com.people.job.inquiry.service.InquiryService;
+import com.people.job.job.dto.JobopeningDTO;
+import com.people.job.payment.dto.PaymentDTO;
+import com.people.job.user.entity.UserEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureTestMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Arrays;
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@AutoConfigureTestMvc
+@WebMvcTest(AdminController.class)
 @ActiveProfiles("test")
-@Transactional
 @DisplayName("관리자 컨트롤러 테스트")
 class AdminControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @MockBean
+    @MockitoBean
     private AdminService adminService;
 
+    @MockitoBean
+    private InquiryService inquiryService;
+
+    @MockitoBean
+    private ExcelService excelService;
+
+    private UserEntity testUser;
+    private JobopeningDTO testJob;
+    private InquiryDTO testInquiry;
+    private PaymentDTO testPayment;
     private DashboardDTO testDashboard;
 
     @BeforeEach
     void setUp() {
+        testUser = UserEntity.builder()
+                .userNo(1L)
+                .userid("testuser")
+                .username("테스트사용자")
+                .email("test@example.com")
+                .userType(UserEntity.UserType.INDIVIDUAL)
+                .isActive(true)
+                .build();
+
+        testJob = JobopeningDTO.builder()
+                .jobNo(1L)
+                .title("백엔드 개발자 채용")
+                .company("테스트 회사")
+                .location("서울")
+                .regdate(LocalDate.now())
+                .build();
+
+        testInquiry = InquiryDTO.builder()
+                .inquiryNo(1L)
+                .title("서비스 문의")
+                .content("문의 내용입니다.")
+                .writer("홍길동")
+                .email("inquiry@example.com")
+                .regdate(LocalDate.now())
+                .build();
+
+        testPayment = PaymentDTO.builder()
+                .paymentNo(1L)
+                .userNo(1L)
+                .amount(java.math.BigDecimal.valueOf(29000))
+                .paymentMethod("CARD")
+                .paymentStatus("COMPLETED")
+                .build();
+
         testDashboard = DashboardDTO.builder()
-                .totalUsers(1000L)
-                .totalJobs(500L)
-                .totalApplications(2000L)
-                .todayNewUsers(10L)
-                .todayNewJobs(5L)
-                .todayApplications(50L)
-                .activeUsers(800L)
-                .activeJobs(400L)
+                .totalUsers(100L)
+                .totalJobs(50L)
+                .totalInquiries(20L)
+                .totalPayments(30L)
                 .build();
     }
 
     @Test
-    @DisplayName("대시보드 정보 조회 테스트")
-    void getDashboard() throws Exception {
+    @DisplayName("전체 회원 조회 성공 테스트")
+    void getAllUsersSuccess() throws Exception {
         // Given
-        when(adminService.getDashboardData()).thenReturn(testDashboard);
+        List<UserEntity> users = Arrays.asList(testUser);
+        when(adminService.getAllUsers()).thenReturn(users);
+
+        // When & Then
+        mockMvc.perform(get("/api/admin/users")) // 실제 매핑 경로
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$[0].userid").value("testuser"));
+    }
+
+    @Test
+    @DisplayName("회원 삭제 성공 테스트")
+    void deleteUserSuccess() throws Exception {
+        // Given
+        doNothing().when(adminService).deleteUser(1L);
+
+        // When & Then
+        mockMvc.perform(delete("/api/admin/users/{userNo}", 1L))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(content().string("회원 삭제 완료")); // 실제 응답 메시지
+    }
+
+    @Test
+    @DisplayName("전체 채용공고 조회 성공 테스트")
+    void getAllJobsSuccess() throws Exception {
+        // Given
+        List<JobopeningDTO> jobs = Arrays.asList(testJob);
+        when(adminService.getAllJobopenings()).thenReturn(jobs);
+
+        // When & Then
+        mockMvc.perform(get("/api/admin/jobs"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$[0].title").value("백엔드 개발자 채용"));
+    }
+
+    @Test
+    @DisplayName("채용공고 삭제 성공 테스트")
+    void deleteJobSuccess() throws Exception {
+        // Given
+        doNothing().when(adminService).deleteJobopening(1L);
+
+        // When & Then
+        mockMvc.perform(delete("/api/admin/jobs/{jobopeningNo}", 1L))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(content().string("공고 삭제 완료")); // 실제 응답 메시지
+    }
+
+    @Test
+    @DisplayName("전체 문의사항 조회 성공 테스트")
+    void getAllInquiriesSuccess() throws Exception {
+        // Given
+        List<InquiryDTO> inquiries = Arrays.asList(testInquiry);
+        when(adminService.getAllInquiries()).thenReturn(inquiries);
+
+        // When & Then
+        mockMvc.perform(get("/api/admin/inquiries"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$[0].title").value("서비스 문의"));
+    }
+
+    @Test
+    @DisplayName("문의사항 삭제 성공 테스트")
+    void deleteInquirySuccess() throws Exception {
+        // Given
+        doNothing().when(adminService).deleteInquiry(1L);
+
+        // When & Then
+        mockMvc.perform(delete("/api/admin/inquiries/{inquiryNo}", 1L))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(content().string("문의 삭제 완료")); // 실제 응답 메시지
+    }
+
+    @Test
+    @DisplayName("문의사항 답변 등록 성공 테스트")
+    void answerInquirySuccess() throws Exception {
+        // Given
+        doNothing().when(adminService).answerInquiry(eq(1L), anyString(), anyString());
+
+        // When & Then
+        mockMvc.perform(put("/api/admin/inquiries/{inquiryNo}/answer", 1L)
+                        .param("answer", "답변 내용입니다.")
+                        .param("answerBy", "관리자"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(content().string("답변 등록 완료")); // 실제 응답 메시지
+    }
+
+    @Test
+    @DisplayName("전체 결제 내역 조회 성공 테스트")
+    void getAllPaymentsSuccess() throws Exception {
+        // Given
+        List<PaymentDTO> payments = Arrays.asList(testPayment);
+        when(adminService.getAllPayments()).thenReturn(payments);
+
+        // When & Then
+        mockMvc.perform(get("/api/admin/payments"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$[0].paymentStatus").value("COMPLETED"));
+    }
+
+    @Test
+    @DisplayName("대시보드 통계 조회 성공 테스트")
+    void getDashboardSuccess() throws Exception {
+        // Given
+        when(adminService.getDashboardStats()).thenReturn(testDashboard);
 
         // When & Then
         mockMvc.perform(get("/api/admin/dashboard"))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalUsers").value(1000L))
-                .andExpect(jsonPath("$.totalJobs").value(500L))
-                .andExpect(jsonPath("$.totalApplications").value(2000L));
+                .andExpect(jsonPath("$.totalUsers").value(100))
+                .andExpect(jsonPath("$.totalJobs").value(50))
+                .andExpect(jsonPath("$.totalInquiries").value(20))
+                .andExpect(jsonPath("$.totalPayments").value(30));
     }
 
     @Test
-    @DisplayName("사용자 통계 조회 테스트")
-    void getUserStats() throws Exception {
+    @DisplayName("회원 엑셀 다운로드 성공 테스트")
+    void downloadUsersExcelSuccess() throws Exception {
         // Given
-        Map<String, Object> userStats = new HashMap<>();
-        userStats.put("total", 1000L);
-        userStats.put("active", 800L);
-        userStats.put("inactive", 200L);
-        userStats.put("individual", 700L);
-        userStats.put("company", 300L);
-
-        when(adminService.getUserStatistics()).thenReturn(userStats);
+        byte[] excelData = "Excel data".getBytes();
+        when(excelService.exportUsersToExcel()).thenReturn(org.springframework.http.ResponseEntity.ok()
+                .header("Content-Disposition", "attachment; filename=users.xlsx")
+                .body(excelData));
 
         // When & Then
-        mockMvc.perform(get("/api/admin/stats/users"))
+        mockMvc.perform(get("/api/admin/excel/users"))
                 .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.total").value(1000L))
-                .andExpect(jsonPath("$.active").value(800L))
-                .andExpect(jsonPath("$.individual").value(700L));
+                .andExpect(status().isOk());
     }
 
     @Test
-    @DisplayName("채용공고 통계 조회 테스트")
-    void getJobStats() throws Exception {
+    @DisplayName("채용공고 엑셀 다운로드 성공 테스트")
+    void downloadJobsExcelSuccess() throws Exception {
         // Given
-        Map<String, Object> jobStats = new HashMap<>();
-        jobStats.put("total", 500L);
-        jobStats.put("active", 400L);
-        jobStats.put("expired", 100L);
-        jobStats.put("thisMonth", 50L);
-
-        when(adminService.getJobStatistics()).thenReturn(jobStats);
+        byte[] excelData = "Excel data".getBytes();
+        when(excelService.exportJobsToExcel()).thenReturn(org.springframework.http.ResponseEntity.ok()
+                .header("Content-Disposition", "attachment; filename=jobs.xlsx")
+                .body(excelData));
 
         // When & Then
-        mockMvc.perform(get("/api/admin/stats/jobs"))
+        mockMvc.perform(get("/api/admin/excel/jobs"))
                 .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.total").value(500L))
-                .andExpect(jsonPath("$.active").value(400L))
-                .andExpect(jsonPath("$.thisMonth").value(50L));
+                .andExpect(status().isOk());
     }
 
     @Test
-    @DisplayName("지원 통계 조회 테스트")
-    void getApplicationStats() throws Exception{
+    @DisplayName("지원자 엑셀 다운로드 성공 테스트")
+    void downloadApplicantsExcelSuccess() throws Exception {
         // Given
-        Map<String, Object> applicationStats = new HashMap<>();
-        applicationStats.put("total", 2000L);
-        applicationStats.put("pending", 500L);
-        applicationStats.put("accepted", 300L);
-        applicationStats.put("rejected", 1200L);
-        applicationStats.put("thisWeek", 150L);
-
-        when(adminService.getApplicationStatistics()).thenReturn(applicationStats);
+        byte[] excelData = "Excel data".getBytes();
+        when(excelService.exportApplicantsToExcel(1L)).thenReturn(org.springframework.http.ResponseEntity.ok()
+                .header("Content-Disposition", "attachment; filename=applicants_1.xlsx")
+                .body(excelData));
 
         // When & Then
-        mockMvc.perform(get("/api/admin/stats/applications"))
+        mockMvc.perform(get("/api/admin/excel/applicants/{jobNo}", 1L))
                 .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.total").value(2000L))
-                .andExpect(jsonPath("$.pending").value(500L))
-                .andExpect(jsonPath("$.accepted").value(300L));
-    }
-
-    @Test
-    @DisplayName("시스템 통계 조회 테스트")
-    void getSystemStats() throws Exception {
-        // Given
-        Map<String, Object> systemStats = new HashMap<>();
-        systemStats.put("serverUptime", "7 days");
-        systemStats.put("memoryUsage", "65%");
-        systemStats.put("diskUsage", "45%");
-        systemStats.put("activeConnections", 250L);
-
-        when(adminService.getSystemStatistics()).thenReturn(systemStats);
-
-        // When & Then
-        mockMvc.perform(get("/api/admin/stats/system"))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.serverUptime").value("7 days"))
-                .andExpect(jsonPath("$.memoryUsage").value("65%"));
-    }
-
-    @Test
-    @DisplayName("사용자 관리 - 사용자 비활성화 테스트")
-    void deactivateUser() throws Exception {
-        // Given
-        Map<String, Object> result = new HashMap<>();
-        result.put("success", true);
-        result.put("message", "사용자가 비활성화되었습니다.");
-
-        when(adminService.deactivateUser(1L)).thenReturn(result);
-
-        // When & Then
-        mockMvc.perform(patch("/api/admin/users/{userId}/deactivate", 1L))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("사용자가 비활성화되었습니다."));
-    }
-
-    @Test
-    @DisplayName("사용자 관리 - 사용자 활성화 테스트")
-    void activateUser() throws Exception {
-        // Given
-        Map<String, Object> result = new HashMap<>();
-        result.put("success", true);
-        result.put("message", "사용자가 활성화되었습니다.");
-
-        when(adminService.activateUser(1L)).thenReturn(result);
-
-        // When & Then
-        mockMvc.perform(patch("/api/admin/users/{userId}/activate", 1L))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("사용자가 활성화되었습니다."));
-    }
-
-    @Test
-    @DisplayName("채용공고 관리 - 공고 승인 테스트")
-    void approveJob() throws Exception {
-        // Given
-        Map<String, Object> result = new HashMap<>();
-        result.put("success", true);
-        result.put("message", "채용공고가 승인되었습니다.");
-
-        when(adminService.approveJob(1L)).thenReturn(result);
-
-        // When & Then
-        mockMvc.perform(patch("/api/admin/jobs/{jobId}/approve", 1L))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("채용공고가 승인되었습니다."));
-    }
-
-    @Test
-    @DisplayName("채용공고 관리 - 공고 거부 테스트")
-    void rejectJob() throws Exception {
-        // Given
-        Map<String, Object> result = new HashMap<>();
-        result.put("success", true);
-        result.put("message", "채용공고가 거부되었습니다.");
-
-        when(adminService.rejectJob(eq(1L), any(String.class))).thenReturn(result);
-
-        // When & Then
-        mockMvc.perform(patch("/api/admin/jobs/{jobId}/reject", 1L)
-                        .param("reason", "부적절한 내용"))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("채용공고가 거부되었습니다."));
-    }
-
-    @Test
-    @DisplayName("기간별 통계 조회 테스트")
-    void getStatsByPeriod() throws Exception {
-        // Given
-        Map<String, Object> periodStats = new HashMap<>();
-        periodStats.put("period", "weekly");
-        periodStats.put("newUsers", 70L);
-        periodStats.put("newJobs", 35L);
-        periodStats.put("newApplications", 350L);
-
-        when(adminService.getStatsByPeriod(eq("weekly"), any(LocalDate.class), any(LocalDate.class)))
-                .thenReturn(periodStats);
-
-        // When & Then
-        mockMvc.perform(get("/api/admin/stats/period")
-                        .param("period", "weekly")
-                        .param("startDate", "2024-01-01")
-                        .param("endDate", "2024-01-07"))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.period").value("weekly"))
-                .andExpect(jsonPath("$.newUsers").value(70L));
-    }
-
-    @Test
-    @DisplayName("엑셀 보고서 생성 테스트")
-    void generateExcelReport() throws Exception {
-        // Given
-        byte[] excelData = "Excel report content".getBytes();
-
-        when(adminService.generateExcelReport(eq("users"), any(LocalDate.class), any(LocalDate.class)))
-                .thenReturn(excelData);
-
-        // When & Then
-        mockMvc.perform(get("/api/admin/reports/excel")
-                        .param("type", "users")
-                        .param("startDate", "2024-01-01")
-                        .param("endDate", "2024-01-31"))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(header().string("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
-                .andExpect(header().string("Content-Disposition", "attachment; filename=users_report.xlsx"));
-    }
-
-    @Test
-    @DisplayName("시스템 설정 업데이트 테스트")
-    void updateSystemSettings() throws Exception {
-        // Given
-        Map<String, Object> settings = new HashMap<>();
-        settings.put("maintenanceMode", false);
-        settings.put("registrationEnabled", true);
-        settings.put("maxFileSize", "10MB");
-
-        Map<String, Object> result = new HashMap<>();
-        result.put("success", true);
-        result.put("message", "시스템 설정이 업데이트되었습니다.");
-
-        when(adminService.updateSystemSettings(any())).thenReturn(result);
-
-        // When & Then
-        mockMvc.perform(put("/api/admin/settings")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(settings)))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("시스템 설정이 업데이트되었습니다."));
-    }
-
-    @Test
-    @DisplayName("관리자 권한 없이 접근 시 403 에러 테스트")
-    void accessWithoutAdminRole() throws Exception {
-        // Given
-        when(adminService.getDashboardData())
-                .thenThrow(new SecurityException("관리자 권한이 필요합니다."));
-
-        // When & Then
-        mockMvc.perform(get("/api/admin/dashboard"))
-                .andDo(print())
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk());
     }
 }

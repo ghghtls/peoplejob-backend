@@ -61,4 +61,6 @@ public interface JobopeningRepository extends JpaRepository<JobopeningEntity, Lo
             @Param("jobType") String jobType,
             @Param("location") String location,
             Pageable pageable);
+    List<JobopeningEntity> findByUserNo(Long userNo);
+
 }

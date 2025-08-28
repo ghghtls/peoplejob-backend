@@ -12,6 +12,7 @@ import com.people.job.resume.repository.ResumeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -32,62 +33,65 @@ public class MypageServiceImpl implements MypageService {
 
     @Override
     public List<ApplyDTO> getMyApplies(Long userNo) {
+        // 내 이력서들 → 각 이력서의 지원내역
         List<ResumeEntity> resumes = resumeRepository.findByUserNo(userNo);
         return resumes.stream()
-                .flatMap(resume -> applyRepository.findByResumeNo(resume.getResumeNo()).stream())
+                .flatMap(r -> applyRepository.findByResumeNo(r.getResumeNo()).stream())
                 .map(this::toApplyDTO)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<JobopeningDTO> getMyJobopenings(Long companyNo) {
-        return jobopeningRepository.findAll().stream()
-                .filter(job -> job.getCompany().getUserNo().equals(companyNo))
+    public List<JobopeningDTO> getMyJobopenings(Long companyUserNo) {
+        // 회사 사용자 소유 공고: jobopening.userNo = 회사 사용자 번호
+        return jobopeningRepository.findByUserNo(companyUserNo).stream()
                 .map(this::toJobDTO)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<ApplyDTO> getAppliesForMyJob(Long jobopeningNo) {
-        return applyRepository.findByJobopeningNo(jobopeningNo).stream()
+    public List<ApplyDTO> getAppliesForMyJob(Long jobNo) {
+        return applyRepository.findByJobNo(jobNo).stream()
                 .map(this::toApplyDTO)
                 .collect(Collectors.toList());
     }
 
-    private ResumeDTO toResumeDTO(ResumeEntity entity) {
+    private ResumeDTO toResumeDTO(ResumeEntity e) {
         return ResumeDTO.builder()
-                .resumeNo(entity.getResumeNo())
-                .title(entity.getTitle())
-                .content(entity.getContent())
-                .education(entity.getEducation())
-                .career(entity.getCareer())
-                .certificate(entity.getCertificate())
-                .hopeJobtype(entity.getHopeJobtype())
-                .hopeLocation(entity.getHopeLocation())
-                .salary(entity.getSalary())
-                .workType(entity.getWorkType())
-                .regdate(entity.getRegdate())
-                .imagePath(entity.getImagePath())
-                .originalImage(entity.getOriginalImage())
-                .userNo(entity.getUserNo())
+                .resumeNo(e.getResumeNo())
+                .title(e.getTitle())
+                .content(e.getContent())
+                .education(e.getEducation())
+                .career(e.getCareer())
+                .certificate(e.getCertificate())
+                .hopeJobtype(e.getHopeJobtype())
+                .hopeLocation(e.getHopeLocation())
+                .salary(e.getSalary())
+                .workType(e.getWorkType())
+                .regdate(e.getRegdate())
+                .imagePath(e.getImagePath())
+                .originalImage(e.getOriginalImage())
+                .userNo(e.getUserNo())
                 .build();
     }
 
     private JobopeningDTO toJobDTO(JobopeningEntity e) {
         return JobopeningDTO.builder()
-                .jobopeningNo(e.getJobopeningNo())
+                .jobNo(e.getJobNo())            // jobopeningNo → jobNo
                 .title(e.getTitle())
                 .content(e.getContent())
-                .jobtype(e.getJobtype())
+                .jobType(e.getJobType())        // jobtype → jobType
                 .location(e.getLocation())
                 .education(e.getEducation())
-                .career(e.getCareer())
+                .experience(e.getExperience())  // career → experience
                 .salary(e.getSalary())
-                .regdate(e.getRegdate())
+                .workType(e.getWorkType())
                 .deadline(e.getDeadline())
-                .companyNo(e.getCompany().getUserNo())
-                .filename(e.getFilename())
-                .originalFilename(e.getOriginalFilename())
+                .regdate(LocalDate.from(e.getRegdate()))
+                .company(e.getCompany())        // 스키마상 company(회사명) 컬럼 존재
+                .userNo(e.getUserNo())          // 공고 소유자(회사 사용자 번호)
+                .viewCount(e.getViewCount())
+                .isActive(e.getIsActive())
                 .build();
     }
 
@@ -95,8 +99,11 @@ public class MypageServiceImpl implements MypageService {
         return ApplyDTO.builder()
                 .applyNo(e.getApplyNo())
                 .resumeNo(e.getResumeNo())
-                .jobopeningNo(e.getJobopeningNo())
-                .regdate(e.getRegdate())
+                .jobNo(e.getJobNo())            // jobopeningNo → jobNo
+                .userNo(e.getUserNo())          // 지원자 userNo (NOT NULL)
+                .applyDate(e.getApplyDate())    // regdate → applyDate
+                .status(e.getStatus())
+                .message(e.getMessage())
                 .build();
     }
 }

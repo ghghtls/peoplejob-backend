@@ -15,6 +15,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
@@ -30,6 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(JobopeningController.class)
+@ActiveProfiles("test")
 @DisplayName("채용공고 컨트롤러 테스트")
 class JobopeningControllerTest {
 
@@ -53,17 +55,17 @@ class JobopeningControllerTest {
                 .company("테스트 회사")
                 .location("서울")
                 .jobType("IT/소프트웨어")
-                .salary("협의"
-                        .workType("정규직")
-                        .experience("3년 이상")
-                        .education("학력무관")
-                        .deadline(LocalDate.now().plusDays(30))
-                        .regdate(LocalDate.now()) // LocalDate로 수정
-                        .viewCount(0)
-                        .isActive(true)
-                        .userNo(1L)
-                        .status("DRAFT")
-                        .build();
+                .salary("협의")
+                .workType("정규직")
+                .experience("3년 이상")
+                .education("학력무관")
+                .deadline(LocalDate.now().plusDays(30))
+                .regdate(LocalDate.now()) // LocalDate로 수정
+                .viewCount(0)
+                .isActive(true)
+                .userNo(1L)
+                .status("DRAFT")
+                .build();
     }
 
     @Test
@@ -198,7 +200,7 @@ class JobopeningControllerTest {
                         .param("size", "10"))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpected(jsonPath("$.content").isArray());
+                .andExpect(jsonPath("$.content").isArray());
     }
 
     @Test
@@ -213,8 +215,8 @@ class JobopeningControllerTest {
                         .param("userNo", "1"))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpected(jsonPath("$.message").value("채용공고가 게시되었습니다."))
-                .andExpected(jsonPath("$.job.status").value("PUBLISHED"));
+                .andExpect(jsonPath("$.message").value("채용공고가 게시되었습니다."))
+                .andExpect(jsonPath("$.job.status").value("PUBLISHED"));
     }
 
     @Test
@@ -231,8 +233,8 @@ class JobopeningControllerTest {
                         .param("page", "0")
                         .param("size", "10"))
                 .andDo(print())
-                .andExpected(status().isOk())
-                .andExpected(jsonPath("$.content").isArray());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray());
     }
 
     @Test
@@ -249,10 +251,10 @@ class JobopeningControllerTest {
         // When & Then
         mockMvc.perform(get("/api/jobs/user/{userNo}/status-counts", 1L))
                 .andDo(print())
-                .andExpected(status().isOk())
-                .andExpected(jsonPath("$.DRAFT").value(5))
-                .andExpected(jsonPath("$.PUBLISHED").value(10))
-                .andExpected(jsonPath("$.EXPIRED").value(3));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.DRAFT").value(5))
+                .andExpect(jsonPath("$.PUBLISHED").value(10))
+                .andExpect(jsonPath("$.EXPIRED").value(3));
     }
 
     @Test
@@ -270,9 +272,9 @@ class JobopeningControllerTest {
                         .param("page", "0")
                         .param("size", "10"))
                 .andDo(print())
-                .andExpected(status().isOk())
-                .andExpected(jsonPath("$.content").isArray())
-                .andExpected(jsonPath("$.content[0].title").value("백엔드 개발자 채용"));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content[0].title").value("백엔드 개발자 채용"));
     }
 
     @Test
@@ -292,8 +294,8 @@ class JobopeningControllerTest {
                         .param("page", "0")
                         .param("size", "10"))
                 .andDo(print())
-                .andExpected(status().isOk())
-                .andExpected(jsonPath("$.content").isArray());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray());
     }
 
     @Test
@@ -306,8 +308,8 @@ class JobopeningControllerTest {
         // When & Then
         mockMvc.perform(post("/api/jobs/{jobNo}/expire", 1L))
                 .andDo(print())
-                .andExpected(status().isOk())
-                .andExpected(jsonPath("$.message").value("채용공고가 마감 처리되었습니다."));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("채용공고가 마감 처리되었습니다."));
     }
 
     @Test
@@ -319,7 +321,7 @@ class JobopeningControllerTest {
         // When & Then
         mockMvc.perform(post("/api/jobs/expire-overdue"))
                 .andDo(print())
-                .andExpected(status().isOk())
-                .andExpected(jsonPath("$.message").value("마감일이 지난 채용공고들이 처리되었습니다."));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("마감일이 지난 채용공고들이 처리되었습니다."));
     }
 }

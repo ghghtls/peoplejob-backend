@@ -18,18 +18,20 @@ public class ApplyServiceImpl implements ApplyService {
 
     @Override
     public void applyToJob(ApplyDTO dto) {
-        boolean alreadyApplied = applyRepository.existsByResumeNoAndJobopeningNo(
-                dto.getResumeNo(), dto.getJobopeningNo()
+        boolean alreadyApplied = applyRepository.existsByResumeNoAndJobNo(
+                dto.getResumeNo(), dto.getJobNo()
         );
-
         if (alreadyApplied) {
-            throw new RuntimeException("이미 지원한 공고입니다.");
+            throw new IllegalStateException("이미 지원한 공고입니다.");
         }
 
         ApplyEntity entity = ApplyEntity.builder()
                 .resumeNo(dto.getResumeNo())
-                .jobopeningNo(dto.getJobopeningNo())
-                .regdate(LocalDate.now())
+                .jobNo(dto.getJobNo())
+                .userNo(dto.getUserNo()) // 없으면 인증정보에서 꺼내거나 DTO에 추가
+                .applyDate(LocalDate.now())
+                .status("PENDING")       // 선택
+                .message(dto.getMessage()) // 선택
                 .build();
 
         applyRepository.save(entity);
@@ -44,7 +46,7 @@ public class ApplyServiceImpl implements ApplyService {
 
     @Override
     public List<ApplyDTO> getAppliesByJobopening(Long jobopeningNo) {
-        return applyRepository.findByJobopeningNo(jobopeningNo).stream()
+        return applyRepository.findByJobNo(jobopeningNo).stream()
                 .map(this::entityToDTO)
                 .collect(Collectors.toList());
     }
@@ -58,8 +60,11 @@ public class ApplyServiceImpl implements ApplyService {
         return ApplyDTO.builder()
                 .applyNo(e.getApplyNo())
                 .resumeNo(e.getResumeNo())
-                .jobopeningNo(e.getJobopeningNo())
-                .regdate(e.getRegdate())
+                .jobNo(e.getJobNo())
+                .userNo(e.getUserNo())
+                .applyDate(e.getApplyDate()) //
+                .status(e.getStatus())
+                .message(e.getMessage())
                 .build();
     }
 }

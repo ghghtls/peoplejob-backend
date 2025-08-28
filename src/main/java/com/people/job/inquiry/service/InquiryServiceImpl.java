@@ -18,14 +18,17 @@ public class InquiryServiceImpl implements InquiryService {
 
     @Override
     public void insertInquiry(InquiryDTO dto) {
-        InquiryEntity entity = InquiryEntity.builder()
-                .userNo(dto.getUserNo())
+        InquiryEntity e = InquiryEntity.builder()
                 .title(dto.getTitle())
                 .content(dto.getContent())
+                .writer(dto.getWriter())
+                .email(dto.getEmail())
+                .phone(dto.getPhone())
+                .category(dto.getCategory())
                 .regdate(LocalDate.now())
-                .status("WAIT")
+                .isAnswered(false)
                 .build();
-        inquiryRepository.save(entity);
+        inquiryRepository.save(e);
     }
 
     @Override
@@ -67,26 +70,28 @@ public class InquiryServiceImpl implements InquiryService {
 
     @Override
     public void answerInquiry(Long inquiryNo, String answer) {
-        InquiryEntity entity = inquiryRepository.findById(inquiryNo)
+        var e = inquiryRepository.findById(inquiryNo)
                 .orElseThrow(() -> new RuntimeException("문의가 존재하지 않습니다."));
-
-        entity.setAnswer(answer);
-        entity.setAnswerDate(LocalDate.now());
-        entity.setStatus("ANSWERED");
-
-        inquiryRepository.save(entity);
+        e.setAnswer(answer);
+        e.setAnswerDate(LocalDate.now());
+        e.setIsAnswered(true);
+        inquiryRepository.save(e);
     }
 
     private InquiryDTO toDTO(InquiryEntity e) {
         return InquiryDTO.builder()
                 .inquiryNo(e.getInquiryNo())
-                .userNo(e.getUserNo())
                 .title(e.getTitle())
                 .content(e.getContent())
+                .writer(e.getWriter())       // DB: writer
+                .email(e.getEmail())         // DB: email
+                .phone(e.getPhone())         // DB: phone
+                .category(e.getCategory())   // DB: category
                 .regdate(e.getRegdate())
+                .isAnswered(e.getIsAnswered()) // DB: isAnswered (boolean)
                 .answer(e.getAnswer())
                 .answerDate(e.getAnswerDate())
-                .status(e.getStatus())
+                .answerBy(e.getAnswerBy())     // DB: answerBy
                 .build();
     }
 }

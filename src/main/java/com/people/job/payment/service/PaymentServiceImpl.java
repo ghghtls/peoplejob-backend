@@ -17,14 +17,14 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public void processPayment(PaymentDTO dto) {
+        // 스키마에 존재하는 필드만 매핑
         PaymentEntity entity = PaymentEntity.builder()
                 .userNo(dto.getUserNo())
-                .jobopeningNo(dto.getJobopeningNo())
-                .productName(dto.getProductName())
-                .price(dto.getPrice())
-                .startDate(dto.getStartDate())
-                .endDate(dto.getEndDate())
-                .status("PAID")
+                .amount(dto.getAmount())                     // price → amount
+                .paymentMethod(dto.getPaymentMethod())
+                .paymentStatus("PAID")                       // status → paymentStatus
+                // paymentDate는 DB DEFAULT CURRENT_TIMESTAMP 사용
+                .description(dto.getDescription())           // 설명(선택)
                 .build();
 
         paymentRepository.save(entity);
@@ -37,11 +37,11 @@ public class PaymentServiceImpl implements PaymentService {
                 .collect(Collectors.toList());
     }
 
+    // ❌ 스키마에 jobopeningNo 컬럼이 없으므로 제거가 맞음.
+    // 기존 시그니처를 꼭 유지해야 한다면, UnsupportedOperationException 처리 권장.
     @Override
     public List<PaymentDTO> getPaymentsByJobopening(Long jobopeningNo) {
-        return paymentRepository.findByJobopeningNo(jobopeningNo).stream()
-                .map(this::toDTO)
-                .collect(Collectors.toList());
+        throw new UnsupportedOperationException("payment 테이블에 jobopeningNo 컬럼이 없어 조회할 수 없습니다.");
     }
 
     @Override
@@ -49,7 +49,7 @@ public class PaymentServiceImpl implements PaymentService {
         PaymentEntity entity = paymentRepository.findById(paymentNo)
                 .orElseThrow(() -> new RuntimeException("결제 내역이 없습니다."));
 
-        entity.setStatus("CANCELLED");
+        entity.setPaymentStatus("CANCELLED");               // status → paymentStatus
         paymentRepository.save(entity);
     }
 
@@ -57,12 +57,11 @@ public class PaymentServiceImpl implements PaymentService {
         return PaymentDTO.builder()
                 .paymentNo(e.getPaymentNo())
                 .userNo(e.getUserNo())
-                .jobopeningNo(e.getJobopeningNo())
-                .productName(e.getProductName())
-                .price(e.getPrice())
-                .startDate(e.getStartDate())
-                .endDate(e.getEndDate())
-                .status(e.getStatus())
+                .amount(e.getAmount())
+                .paymentMethod(e.getPaymentMethod())
+                .paymentStatus(e.getPaymentStatus())
+                .paymentDate(e.getPaymentDate())
+                .description(e.getDescription())
                 .build();
     }
 }

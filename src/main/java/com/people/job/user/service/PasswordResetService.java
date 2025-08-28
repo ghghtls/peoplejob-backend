@@ -55,7 +55,7 @@ public class PasswordResetService {
             tokenRepository.save(tokenEntity);
 
             // 이메일 발송
-            emailService.sendPasswordResetEmail(email, user.getName(), resetToken); // UserEntity의 name 필드 사용
+            emailService.sendPasswordResetEmail(email, user.getUsername(), resetToken);// UserEntity의 name 필드 사용
 
             log.info("비밀번호 재설정 이메일 발송 성공: {}", email);
             return true;

@@ -18,16 +18,16 @@ public class ScrapServiceImpl implements ScrapService {
 
     @Override
     public void addScrap(ScrapDTO dto) {
-        boolean already = scrapRepository.existsByUserNoAndJobopeningNo(dto.getUserNo(), dto.getJobopeningNo());
-
+        // jobopeningNo -> jobNo
+        boolean already = scrapRepository.existsByUserNoAndJobNo(dto.getUserNo(), dto.getJobNo());
         if (already) {
             throw new RuntimeException("이미 스크랩한 공고입니다.");
         }
 
         ScrapEntity entity = ScrapEntity.builder()
                 .userNo(dto.getUserNo())
-                .jobopeningNo(dto.getJobopeningNo())
-                .regdate(LocalDate.now())
+                .jobNo(dto.getJobNo())               // jobopeningNo -> jobNo
+                .scrapDate(LocalDate.now())          // regdate -> scrapDate
                 .build();
 
         scrapRepository.save(entity);
@@ -46,8 +46,9 @@ public class ScrapServiceImpl implements ScrapService {
     }
 
     @Override
-    public void deleteScrapByUserAndJob(Long userNo, Long jobopeningNo) {
-        ScrapEntity entity = scrapRepository.findByUserNoAndJobopeningNo(userNo, jobopeningNo)
+    public void deleteScrapByUserAndJob(Long userNo, Long jobNo) {
+        // findByUserNoAndJobopeningNo -> findByUserNoAndJobNo
+        ScrapEntity entity = scrapRepository.findByUserNoAndJobNo(userNo, jobNo)
                 .orElseThrow(() -> new RuntimeException("스크랩 내역이 없습니다."));
         scrapRepository.delete(entity);
     }
@@ -56,8 +57,8 @@ public class ScrapServiceImpl implements ScrapService {
         return ScrapDTO.builder()
                 .scrapNo(e.getScrapNo())
                 .userNo(e.getUserNo())
-                .jobopeningNo(e.getJobopeningNo())
-                .regdate(e.getRegdate())
+                .jobNo(e.getJobNo())                 // jobopeningNo -> jobNo
+                .scrapDate(e.getScrapDate())         // regdate -> scrapDate
                 .build();
     }
 }
