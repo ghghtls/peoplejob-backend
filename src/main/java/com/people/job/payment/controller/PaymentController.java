@@ -26,10 +26,7 @@ public class PaymentController {
         return ResponseEntity.ok(paymentService.getPaymentsByUser(userNo));
     }
 
-    @GetMapping("/job/{jobopeningNo}")
-    public ResponseEntity<List<PaymentDTO>> jobPayments(@PathVariable Long jobopeningNo) {
-        return ResponseEntity.ok(paymentService.getPaymentsByJobopening(jobopeningNo));
-    }
+
 
     @PutMapping("/cancel/{paymentNo}")
     public ResponseEntity<?> cancel(@PathVariable Long paymentNo) {

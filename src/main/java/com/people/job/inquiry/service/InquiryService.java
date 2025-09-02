@@ -10,7 +10,6 @@ public interface InquiryService {
 
     List<InquiryDTO> getAllInquiries(); // 관리자용
 
-    List<InquiryDTO> getInquiriesByUser(Long userNo); // 사용자용
 
     InquiryDTO getInquiry(Long inquiryNo);
 

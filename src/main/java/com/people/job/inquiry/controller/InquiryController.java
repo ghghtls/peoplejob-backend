@@ -22,11 +22,7 @@ public class InquiryController {
         return ResponseEntity.ok("문의가 등록되었습니다.");
     }
 
-    // 사용자 - 내 문의 조회
-    @GetMapping("/user/{userNo}")
-    public ResponseEntity<List<InquiryDTO>> userInquiries(@PathVariable Long userNo) {
-        return ResponseEntity.ok(inquiryService.getInquiriesByUser(userNo));
-    }
+
 
     // 관리자 - 전체 문의 조회
     @GetMapping

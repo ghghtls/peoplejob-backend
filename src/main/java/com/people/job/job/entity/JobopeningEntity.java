@@ -17,6 +17,7 @@ public class JobopeningEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "job_no")
     private Long jobNo;
 
     @Column(nullable = false)

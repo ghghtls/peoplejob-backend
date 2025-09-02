@@ -37,12 +37,7 @@ public class PaymentServiceImpl implements PaymentService {
                 .collect(Collectors.toList());
     }
 
-    // ❌ 스키마에 jobopeningNo 컬럼이 없으므로 제거가 맞음.
-    // 기존 시그니처를 꼭 유지해야 한다면, UnsupportedOperationException 처리 권장.
-    @Override
-    public List<PaymentDTO> getPaymentsByJobopening(Long jobopeningNo) {
-        throw new UnsupportedOperationException("payment 테이블에 jobopeningNo 컬럼이 없어 조회할 수 없습니다.");
-    }
+ 
 
     @Override
     public void cancelPayment(Long paymentNo) {

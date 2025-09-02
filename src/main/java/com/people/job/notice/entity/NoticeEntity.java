@@ -17,6 +17,7 @@ public class NoticeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "notice_no")
     private Long noticeNo;
 
     @Column(nullable = false, length = 200)

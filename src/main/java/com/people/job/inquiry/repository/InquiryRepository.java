@@ -7,5 +7,5 @@ import java.util.List;
 
 public interface InquiryRepository extends JpaRepository<InquiryEntity, Long> {
 
-    List<InquiryEntity> findByUserNo(Long userNo);
+
 }

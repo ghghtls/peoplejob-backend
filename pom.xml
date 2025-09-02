@@ -17,7 +17,7 @@
 	<description>피플잡 구인구직 플랫폼 백엔드</description>
 
 	<properties>
-		<java.version>21</java.version>
+		<java.version>17</java.version>
 		<jacoco.version>0.8.12</jacoco.version>
 		<spotbugs.version>4.8.6</spotbugs.version>
 		<jwt.version>0.12.6</jwt.version>
@@ -205,9 +205,9 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.13.0</version>
+				<version>3.11.0</version>
 				<configuration>
-					<release>21</release>
+					<release>17</release>
 					<annotationProcessorPaths>
 						<path>
 							<groupId>org.projectlombok</groupId>

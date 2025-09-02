@@ -9,5 +9,4 @@ public interface PaymentRepository extends JpaRepository<PaymentEntity, Long> {
 
     List<PaymentEntity> findByUserNo(Long userNo);
 
-    List<PaymentEntity> findByJobopeningNo(Long jobopeningNo);
 }

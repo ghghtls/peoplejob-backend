@@ -17,6 +17,7 @@ public class PaymentEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "payment_no")
     private Long paymentNo;
 
     @Column(nullable = false)

@@ -23,6 +23,7 @@ public class UserEntity implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "user_no")
     private Long userNo;
 
     @Column(length = 50, unique = true, nullable = false)

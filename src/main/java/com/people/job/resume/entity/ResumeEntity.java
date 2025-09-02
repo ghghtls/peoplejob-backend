@@ -17,6 +17,7 @@ public class ResumeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "resume_no")
     private Long resumeNo;
 
     @Column(length = 200, nullable = false)
@@ -62,4 +63,5 @@ public class ResumeEntity {
     protected void onCreate() {
         this.regdate = LocalDate.now();
     }
+    private Boolean isActive;
 }

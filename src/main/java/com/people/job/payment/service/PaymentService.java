@@ -10,7 +10,6 @@ public interface PaymentService {
 
     List<PaymentDTO> getPaymentsByUser(Long userNo);  // 내 결제 내역
 
-    List<PaymentDTO> getPaymentsByJobopening(Long jobopeningNo);  // 공고별 광고 내역
 
     void cancelPayment(Long paymentNo);  // 관리자 결제 취소
 }

@@ -2,7 +2,6 @@ package com.people.job.apply.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.time.LocalDate;
 
 @Entity
@@ -16,32 +15,31 @@ public class ApplyEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "apply_no")           // ★ PK 컬럼명 매핑
     private Long applyNo;
 
-    @Column(nullable = false)
-    private Long jobNo; // DB 스키마에 맞춤 (jobopeningNo -> jobNo)
+    @Column(name = "job_no", nullable = false)
+    private Long jobNo;
 
-    @Column(nullable = false)
-    private Long userNo; // 지원자 ID
+    @Column(name = "user_no", nullable = false)
+    private Long userNo;
 
-    @Column(nullable = false)
-    private Long resumeNo; // 사용한 이력서 ID
+    @Column(name = "resume_no", nullable = false)
+    private Long resumeNo;
 
-    @Column(nullable = false)
-    private LocalDate applyDate; // DB 스키마의 applyDate와 맞춤
+    @Column(name = "apply_date", nullable = false)
+    private LocalDate applyDate;
 
-    @Column(length = 20, nullable = false)
+    @Column(name = "status", length = 20, nullable = false)
     @Builder.Default
-    private String status = "PENDING"; // PENDING, REVIEWED, ACCEPTED, REJECTED
+    private String status = "PENDING";
 
-    @Column(columnDefinition = "TEXT")
-    private String message; // 지원 메시지
+    @Column(name = "message", columnDefinition = "TEXT")
+    private String message;
 
     @PrePersist
     protected void onCreate() {
-        this.applyDate = LocalDate.now();
-        if (this.status == null) {
-            this.status = "PENDING";
-        }
+        this.applyDate = (this.applyDate == null) ? LocalDate.now() : this.applyDate;
+        if (this.status == null) this.status = "PENDING";
     }
 }

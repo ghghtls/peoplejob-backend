@@ -16,6 +16,7 @@ public class InquiryEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "inquiry_no")
     private Long inquiryNo;
 
     @Column(length = 200, nullable = false)

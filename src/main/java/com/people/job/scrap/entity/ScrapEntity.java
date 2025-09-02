@@ -17,6 +17,7 @@ public class ScrapEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "scrap_no")
     private Long scrapNo;
 
     @Column(nullable = false)

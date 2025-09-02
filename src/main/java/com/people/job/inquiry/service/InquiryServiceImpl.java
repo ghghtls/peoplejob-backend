@@ -38,12 +38,7 @@ public class InquiryServiceImpl implements InquiryService {
                 .collect(Collectors.toList());
     }
 
-    @Override
-    public List<InquiryDTO> getInquiriesByUser(Long userNo) {
-        return inquiryRepository.findByUserNo(userNo).stream()
-                .map(this::toDTO)
-                .collect(Collectors.toList());
-    }
+
 
     @Override
     public InquiryDTO getInquiry(Long inquiryNo) {
