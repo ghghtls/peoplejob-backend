@@ -45,18 +45,20 @@ public interface ScrapRepository extends JpaRepository<ScrapEntity, Long> {
     """)
     Page<ScrapEntity> findUserScrapsWithActiveJobs(@Param("userNo") Long userNo, Pageable pageable);
 
-    // ✅ 특정 기간 내 스크랩된 항목들 (컷오프 날짜 파라미터 사용)
+    // ✅ 최근 스크랩: LocalDate 컷오프(타입 일치)로 고정 — 부팅 오류의 원인 제거
     @Query("""
         SELECT s
         FROM ScrapEntity s
-        WHERE s.scrapDate >= :cutoff
+        WHERE s.userNo = :userNo
+          AND s.scrapDate >= :cutoff
         ORDER BY s.scrapDate DESC
     """)
-    List<ScrapEntity> findRecentScraps(@Param("cutoff") LocalDate cutoff);
+    List<ScrapEntity> findRecentScraps(@Param("userNo") Long userNo,
+                                       @Param("cutoff") LocalDate cutoff);
 
-    // (편의) 최근 7일 헬퍼
-    default List<ScrapEntity> findRecentScrapsLast7Days() {
-        return findRecentScraps(LocalDate.now().minusDays(7));
+    // (편의) 최근 7일
+    default List<ScrapEntity> findRecentScrapsLast7Days(Long userNo) {
+        return findRecentScraps(userNo, LocalDate.now().minusDays(7));
     }
 
     // 인기 채용공고 (스크랩 많이 된 순)

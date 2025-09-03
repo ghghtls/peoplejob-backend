@@ -5,6 +5,7 @@ import com.people.job.scrap.entity.ScrapEntity;
 import com.people.job.scrap.repository.ScrapRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -17,6 +18,7 @@ public class ScrapServiceImpl implements ScrapService {
     private final ScrapRepository scrapRepository;
 
     @Override
+    @Transactional
     public void addScrap(ScrapDTO dto) {
         // jobopeningNo -> jobNo
         boolean already = scrapRepository.existsByUserNoAndJobNo(dto.getUserNo(), dto.getJobNo());
@@ -34,6 +36,7 @@ public class ScrapServiceImpl implements ScrapService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ScrapDTO> getScrapsByUser(Long userNo) {
         return scrapRepository.findByUserNo(userNo).stream()
                 .map(this::toDTO)
@@ -41,11 +44,13 @@ public class ScrapServiceImpl implements ScrapService {
     }
 
     @Override
+    @Transactional
     public void deleteScrap(Long scrapNo) {
         scrapRepository.deleteById(scrapNo);
     }
 
     @Override
+    @Transactional
     public void deleteScrapByUserAndJob(Long userNo, Long jobNo) {
         // findByUserNoAndJobopeningNo -> findByUserNoAndJobNo
         ScrapEntity entity = scrapRepository.findByUserNoAndJobNo(userNo, jobNo)
