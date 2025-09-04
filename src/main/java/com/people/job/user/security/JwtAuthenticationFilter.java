@@ -23,7 +23,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtTokenProvider jwtTokenProvider;
     private final CustomUserDetailsService customUserDetailsService;
 
-    // 공개 경로 화이트리스트 (스킵)
+    // 공개 경로 화이트리스트 (필터 스킵)
     private static final List<String> PUBLIC_ENDPOINTS = List.of(
             "/", "/index.html", "/favicon.ico", "/error",
             "/swagger-ui/**", "/v3/api-docs/**",
@@ -33,12 +33,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/api/job/**", "/api/board/**"
     );
 
-    private final AntPathMatcher pathMatcher = new AntPathMatcher();
+    private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
 
     private boolean isPublic(HttpServletRequest request) {
         String path = request.getRequestURI();
         for (String pattern : PUBLIC_ENDPOINTS) {
-            if (pathMatcher.match(pattern, path)) return true;
+            if (PATH_MATCHER.match(pattern, path)) return true;
         }
         return false;
     }
@@ -64,6 +64,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = header.substring(7);
 
         try {
+            // 유효 토큰이면 인증 컨텍스트 세팅, 아니면 아무 것도 하지 않고 넘김
             if (jwtTokenProvider.validateToken(token)) {
                 String userid = jwtTokenProvider.getUserid(token);
                 UserDetails userDetails = customUserDetailsService.loadUserByUsername(userid);
@@ -71,15 +72,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 UsernamePasswordAuthenticationToken auth =
                         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 SecurityContextHolder.getContext().setAuthentication(auth);
-
-                filterChain.doFilter(request, response);
-            } else {
-                // 토큰이 있지만 유효하지 않으면 401
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             }
-        } catch (Exception e) {
-            // 사용자 조회 실패 등 예외도 401로 통일
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        } catch (Exception ignored) {
+            // 여기서 응답 코드를 쓰지 않는다. (스프링 시큐리티가 적절히 처리)
         }
+
+        // 항상 다음 필터로 넘긴다.
+        filterChain.doFilter(request, response);
     }
 }
