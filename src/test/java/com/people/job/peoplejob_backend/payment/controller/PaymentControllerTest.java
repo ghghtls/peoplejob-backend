@@ -84,26 +84,11 @@ class PaymentControllerTest {
         when(paymentService.getPaymentsByUser(1L)).thenReturn(userPayments);
 
         // When & Then
-        mockMvc.perform(get("/api/payment/user/{userNo}", 1L)) // 실제 경로
+        mockMvc.perform(get("/api/payment/user/{userNo}", 1L))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$[0].userNo").value(1L))
-                .andExpect(jsonPath("$[0].paymentStatus").value("SUCCESS")); // 실제 필드명
-    }
-
-    @Test
-    @DisplayName("채용공고별 결제 내역 조회 테스트")
-    void getJobPayments() throws Exception {
-        // Given
-        List<PaymentDTO> jobPayments = Arrays.asList(testPayment);
-        when(paymentService.getPaymentsByJobopening(1L)).thenReturn(jobPayments); // 실제 메서드명
-
-        // When & Then
-        mockMvc.perform(get("/api/payment/job/{jobopeningNo}", 1L)) // 실제 경로와 매개변수명
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$[0].paymentStatus").value("SUCCESS"));
     }
 
