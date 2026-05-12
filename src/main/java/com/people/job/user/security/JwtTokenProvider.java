@@ -27,7 +27,7 @@ public class JwtTokenProvider {
     public void init() {
         byte[] keyBytes;
         try { keyBytes = Decoders.BASE64.decode(secret); }
-        catch (IllegalArgumentException e) { keyBytes = secret.getBytes(StandardCharsets.UTF_8); }
+        catch (Exception e) { keyBytes = secret.getBytes(StandardCharsets.UTF_8); }
         key = Keys.hmacShaKeyFor(keyBytes);
     }
 
