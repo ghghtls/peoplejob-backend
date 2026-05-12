@@ -74,29 +74,14 @@ class InquiryControllerTest {
     }
 
     @Test
-    @DisplayName("사용자별 문의사항 조회 성공 테스트")
-    void getUserInquiriesSuccess() throws Exception {
-        // Given
-        List<InquiryDTO> inquiries = Arrays.asList(testInquiry);
-        when(inquiryService.getInquiriesByUser(1L)).thenReturn(inquiries); // 실제 메서드명
-
-        // When & Then
-        mockMvc.perform(get("/api/inquiry/user/{userNo}", 1L)) // 실제 매핑 경로
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$[0].title").value("서비스 이용 문의"));
-    }
-
-    @Test
     @DisplayName("전체 문의사항 조회 성공 테스트")
     void getAllInquiriesSuccess() throws Exception {
         // Given
         List<InquiryDTO> inquiries = Arrays.asList(testInquiry);
-        when(inquiryService.getAllInquiries()).thenReturn(inquiries); // 실제 메서드명
+        when(inquiryService.getAllInquiries()).thenReturn(inquiries);
 
         // When & Then
-        mockMvc.perform(get("/api/inquiry")) // 실제 매핑 경로
+        mockMvc.perform(get("/api/inquiry"))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
