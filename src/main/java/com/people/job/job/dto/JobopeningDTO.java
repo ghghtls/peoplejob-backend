@@ -1,6 +1,7 @@
 package com.people.job.job.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.people.job.job.entity.JobopeningEntity;
 import lombok.*;
 
@@ -31,6 +32,7 @@ public class JobopeningDTO {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedAt;
     private Integer viewCount;
+    @JsonProperty("isActive")
     private Boolean isActive;
     private Long userNo;
 
@@ -39,7 +41,9 @@ public class JobopeningDTO {
     private Boolean canEdit;
     private Boolean canPublish;
     private Boolean canDelete;
+    @JsonProperty("isExpired")
     private Boolean isExpired;
+    @JsonProperty("isAdvertised")
     private Boolean isAdvertised;
     private String filename;
     private String originalFilename;
