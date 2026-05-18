@@ -8,4 +8,6 @@ import java.util.List;
 public interface BoardRepository extends JpaRepository<BoardEntity, Long> {
 
     List<BoardEntity> findByCategory(String category);
+
+    List<BoardEntity> findByTitleContainingOrContentContaining(String title, String content);
 }

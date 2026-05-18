@@ -13,6 +13,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 import java.util.List;
 
 @RestController
@@ -26,8 +29,21 @@ public class AdminController {
 
     @AdminRequired
     @GetMapping("/users")
-    public ResponseEntity<List<UserEntity>> allUsers() {
-        return ResponseEntity.ok(adminService.getAllUsers());
+    public ResponseEntity<List<Map<String, Object>>> allUsers() {
+        List<Map<String, Object>> result = adminService.getAllUsers().stream().map(u -> {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("userNo", u.getUserNo());
+            m.put("userid", u.getUserid());
+            m.put("name", u.getUserRealName());
+            m.put("email", u.getEmail());
+            m.put("phone", u.getPhone());
+            m.put("address", u.getAddress());
+            m.put("userType", u.getUserType() != null ? u.getUserType().name() : null);
+            m.put("isActive", u.getIsActive());
+            m.put("createdAt", u.getCreatedAt());
+            return m;
+        }).toList();
+        return ResponseEntity.ok(result);
     }
 
     @AdminRequired
@@ -74,6 +90,12 @@ public class AdminController {
     @GetMapping("/payments")
     public ResponseEntity<List<PaymentDTO>> allPayments() {
         return ResponseEntity.ok(adminService.getAllPayments());
+    }
+
+    @AdminRequired
+    @GetMapping("/applicants")
+    public ResponseEntity<List<Map<String, Object>>> allApplicants() {
+        return ResponseEntity.ok(adminService.getAllApplicants());
     }
 
     @AdminRequired

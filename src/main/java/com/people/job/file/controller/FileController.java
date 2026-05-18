@@ -3,10 +3,13 @@ package com.people.job.file.controller;
 import com.people.job.file.service.FileService;
 import com.people.job.file.service.FileServiceImpl;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -79,6 +82,32 @@ public class FileController {
         }
     }
 
+    // 채용공고 첨부파일 업로드 (jobId 불필요)
+    @PostMapping("/upload/job/attachment")
+    public ResponseEntity<?> uploadJobAttachment(
+            @RequestParam("file") MultipartFile file) {
+        try {
+            Map<String, String> result = fileService.uploadJobAttachment(file);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "파일 업로드 실패: " + e.getMessage()));
+        }
+    }
+
+    // 게시판 파일 업로드 (이미지 + 문서)
+    @PostMapping("/upload/board/file")
+    public ResponseEntity<?> uploadBoardFile(
+            @RequestParam("file") MultipartFile file) {
+        try {
+            Map<String, String> result = fileService.uploadBoardFile(file);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "파일 업로드 실패: " + e.getMessage()));
+        }
+    }
+
     // 파일 삭제
     @DeleteMapping("/delete")
     public ResponseEntity<?> deleteFile(@RequestBody Map<String, String> request) {
@@ -95,6 +124,23 @@ public class FileController {
         } catch (Exception e) {
             return ResponseEntity.badRequest()
                     .body(Map.of("error", "파일 삭제 중 오류: " + e.getMessage()));
+        }
+    }
+
+    // 다중 파일 ZIP 다운로드
+    @PostMapping("/download/multiple")
+    public ResponseEntity<byte[]> downloadMultiple(@RequestBody Map<String, Object> body) {
+        try {
+            @SuppressWarnings("unchecked")
+            List<String> fileUrls = (List<String>) body.get("fileUrls");
+            String zipFileName = (String) body.getOrDefault("zipFileName", "download.zip");
+            byte[] zipBytes = fileService.downloadMultipleAsZip(fileUrls, zipFileName);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + zipFileName + "\"")
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .body(zipBytes);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(null);
         }
     }
 

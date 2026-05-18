@@ -85,6 +85,27 @@ public class ResumeServiceImpl implements ResumeService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public List<ResumeDTO> searchResumes(String keyword) {
+        return resumeRepository.findByTitleContainingOrContentContaining(keyword, keyword).stream()
+                .map(this::entityToDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ResumeDTO> getResumesByJobType(String jobType) {
+        return resumeRepository.findByHopeJobtype(jobType).stream()
+                .map(this::entityToDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ResumeDTO> getResumesByLocation(String location) {
+        return resumeRepository.findByHopeLocation(location).stream()
+                .map(this::entityToDTO)
+                .collect(Collectors.toList());
+    }
+
     private ResumeEntity dtoToEntity(ResumeDTO dto) {
         return ResumeEntity.builder()
                 .resumeNo(dto.getResumeNo())

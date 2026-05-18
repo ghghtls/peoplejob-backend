@@ -1,5 +1,6 @@
 package com.people.job.payment.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.people.job.payment.entity.PaymentEntity;
 import lombok.*;
 
@@ -20,6 +21,9 @@ public class PaymentDTO {
     private String paymentStatus; // DB 스키마와 맞춤 (status -> paymentStatus)
     private LocalDateTime paymentDate; // DB 스키마와 맞춤 (TIMESTAMP)
     private String description; // DB 스키마와 맞춤 (추가)
+    private Long jobNo;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    private LocalDateTime adEndDate;
 
     // Entity -> DTO 변환
     public static PaymentDTO fromEntity(PaymentEntity entity) {

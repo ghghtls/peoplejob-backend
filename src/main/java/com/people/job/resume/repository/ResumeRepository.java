@@ -6,5 +6,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface ResumeRepository extends JpaRepository<ResumeEntity, Long> {
-    List<ResumeEntity> findByUserNo(Long userNo); // 마이페이지용
+    List<ResumeEntity> findByUserNo(Long userNo);
+    List<ResumeEntity> findByTitleContainingOrContentContaining(String title, String content);
+    List<ResumeEntity> findByHopeJobtype(String hopeJobtype);
+    List<ResumeEntity> findByHopeLocation(String hopeLocation);
 }

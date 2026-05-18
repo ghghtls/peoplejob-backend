@@ -7,7 +7,12 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "jobopening")
+@Table(name = "jobopening", indexes = {
+        @Index(name = "idx_job_status_active",   columnList = "status, isActive"),
+        @Index(name = "idx_job_user_no",         columnList = "userNo"),
+        @Index(name = "idx_job_deadline",        columnList = "deadline"),
+        @Index(name = "idx_job_advertised_date", columnList = "isAdvertised, regdate")
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -17,7 +22,7 @@ public class JobopeningEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "job_no")
+    @Column(name = "jobopening_no")
     private Long jobNo;
 
     @Column(nullable = false)
@@ -55,6 +60,14 @@ public class JobopeningEntity {
 
     @Column(nullable = false)
     private Long userNo;
+
+    @Column(nullable = false)
+    private Boolean isAdvertised = false;
+
+    private java.time.LocalDateTime adEndDate;
+
+    private String filename;
+    private String originalFilename;
 
     public enum JobStatus {
         DRAFT("임시저장"),           // 작성 중 (임시저장)

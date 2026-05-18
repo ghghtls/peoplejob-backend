@@ -13,4 +13,8 @@ public interface ApplyService {
     List<ApplyDTO> getAppliesByJobopening(Long jobopeningNo);
 
     void cancelApply(Long applyNo);
+
+    void updateStatus(Long applyNo, String status);
+
+    boolean hasApplied(Long userNo, Long jobNo);
 }

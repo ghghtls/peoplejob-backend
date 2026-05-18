@@ -5,7 +5,13 @@ import lombok.*;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "apply")
+@Table(name = "apply",
+        uniqueConstraints = @UniqueConstraint(name = "uk_apply_user_job", columnNames = {"user_no", "job_no"}),
+        indexes = {
+                @Index(name = "idx_apply_user_no",   columnList = "user_no"),
+                @Index(name = "idx_apply_job_no",    columnList = "job_no"),
+                @Index(name = "idx_apply_resume_no", columnList = "resume_no")
+        })
 @Getter
 @Setter
 @NoArgsConstructor

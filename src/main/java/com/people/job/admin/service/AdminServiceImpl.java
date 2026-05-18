@@ -1,14 +1,13 @@
 package com.people.job.admin.service;
 
 import com.people.job.admin.dto.DashboardDTO;
+import com.people.job.apply.repository.ApplyRepository;
 import com.people.job.inquiry.dto.InquiryDTO;
 import com.people.job.inquiry.entity.InquiryEntity;
 import com.people.job.inquiry.repository.InquiryRepository;
 import com.people.job.job.dto.JobopeningDTO;
-import com.people.job.job.entity.JobopeningEntity;
 import com.people.job.job.repository.JobopeningRepository;
 import com.people.job.payment.dto.PaymentDTO;
-import com.people.job.payment.entity.PaymentEntity;
 import com.people.job.payment.repository.PaymentRepository;
 import com.people.job.user.entity.UserEntity;
 import com.people.job.user.repository.UserRepository;
@@ -16,7 +15,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,6 +28,7 @@ public class AdminServiceImpl implements AdminService {
     private final JobopeningRepository jobopeningRepository;
     private final InquiryRepository inquiryRepository;
     private final PaymentRepository paymentRepository;
+    private final ApplyRepository applyRepository;
 
     @Override
     public List<UserEntity> getAllUsers() {
@@ -107,6 +109,29 @@ public class AdminServiceImpl implements AdminService {
                         .description(pay.getDescription()) // 실제 DB 필드명
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Map<String, Object>> getAllApplicants() {
+        return applyRepository.findAll().stream().map(apply -> {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("applyNo", apply.getApplyNo());
+            m.put("jobNo", apply.getJobNo());
+            m.put("userNo", apply.getUserNo());
+            m.put("resumeNo", apply.getResumeNo());
+            m.put("applyDate", apply.getApplyDate());
+            m.put("status", apply.getStatus());
+            m.put("message", apply.getMessage());
+            jobopeningRepository.findById(apply.getJobNo()).ifPresent(job -> {
+                m.put("jobTitle", job.getTitle());
+                m.put("company", job.getCompany());
+            });
+            userRepository.findById(apply.getUserNo()).ifPresent(user -> {
+                m.put("applicantName", user.getUserRealName());
+                m.put("applicantEmail", user.getEmail());
+            });
+            return m;
+        }).collect(Collectors.toList());
     }
 
     @Override

@@ -39,6 +39,10 @@ public class PaymentEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    private Long jobNo;
+
+    private java.time.LocalDateTime adEndDate;
+
     @PrePersist
     protected void onCreate() {
         this.paymentDate = LocalDateTime.now();

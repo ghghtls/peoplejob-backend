@@ -18,4 +18,6 @@ public interface InquiryService {
     void deleteInquiry(Long inquiryNo);
 
     void answerInquiry(Long inquiryNo, String answer); // 관리자 답변
+
+    List<InquiryDTO> getInquiriesByEmail(String email);
 }

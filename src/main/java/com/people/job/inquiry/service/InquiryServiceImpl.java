@@ -64,6 +64,13 @@ public class InquiryServiceImpl implements InquiryService {
     }
 
     @Override
+    public List<InquiryDTO> getInquiriesByEmail(String email) {
+        return inquiryRepository.findByEmail(email).stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public void answerInquiry(Long inquiryNo, String answer) {
         var e = inquiryRepository.findById(inquiryNo)
                 .orElseThrow(() -> new RuntimeException("문의가 존재하지 않습니다."));

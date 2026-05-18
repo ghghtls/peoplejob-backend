@@ -1,5 +1,7 @@
 package com.people.job.payment.service;
 
+import com.people.job.job.entity.JobopeningEntity;
+import com.people.job.job.repository.JobopeningRepository;
 import com.people.job.payment.dto.PaymentDTO;
 import com.people.job.payment.entity.PaymentEntity;
 import com.people.job.payment.repository.PaymentRepository;
@@ -14,20 +16,30 @@ import java.util.stream.Collectors;
 public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentRepository paymentRepository;
+    private final JobopeningRepository jobopeningRepository;
 
     @Override
     public void processPayment(PaymentDTO dto) {
-        // 스키마에 존재하는 필드만 매핑
         PaymentEntity entity = PaymentEntity.builder()
                 .userNo(dto.getUserNo())
-                .amount(dto.getAmount())                     // price → amount
+                .amount(dto.getAmount())
                 .paymentMethod(dto.getPaymentMethod())
-                .paymentStatus("PAID")                       // status → paymentStatus
-                // paymentDate는 DB DEFAULT CURRENT_TIMESTAMP 사용
-                .description(dto.getDescription())           // 설명(선택)
+                .paymentStatus("PAID")
+                .description(dto.getDescription())
+                .jobNo(dto.getJobNo())
+                .adEndDate(dto.getAdEndDate())
                 .build();
 
         paymentRepository.save(entity);
+
+        // 채용공고에 광고 플래그 설정
+        if (dto.getJobNo() != null) {
+            jobopeningRepository.findById(dto.getJobNo()).ifPresent(job -> {
+                job.setIsAdvertised(true);
+                job.setAdEndDate(dto.getAdEndDate());
+                jobopeningRepository.save(job);
+            });
+        }
     }
 
     @Override
@@ -57,6 +69,8 @@ public class PaymentServiceImpl implements PaymentService {
                 .paymentStatus(e.getPaymentStatus())
                 .paymentDate(e.getPaymentDate())
                 .description(e.getDescription())
+                .jobNo(e.getJobNo())
+                .adEndDate(e.getAdEndDate())
                 .build();
     }
 }

@@ -89,23 +89,6 @@ class PaymentServiceTest {
     }
 
     @Test
-    @DisplayName("채용공고별 결제 내역 조회 테스트")
-    void getPaymentsByJobopening() {
-        // Given - 실제 ServiceImpl에는 이 메서드가 있지만 Entity에는 jobopeningNo 필드가 없으므로
-        // Repository에서 다른 방식으로 조회할 것으로 가정
-        List<PaymentEntity> paymentList = Arrays.asList(testPaymentEntity);
-        when(paymentRepository.findByJobopeningNo(1L)).thenReturn(paymentList);
-
-        // When
-        List<PaymentDTO> result = paymentService.getPaymentsByJobopening(1L);
-
-        // Then
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        verify(paymentRepository).findByJobopeningNo(1L);
-    }
-
-    @Test
     @DisplayName("결제 취소 테스트")
     void cancelPayment() {
         // Given

@@ -16,5 +16,9 @@ public interface ResumeService {
 
     void deleteResume(Long resumeNo);
 
-    List<ResumeDTO> selectByUserNo(Long userNo); // 마이페이지용
+    List<ResumeDTO> selectByUserNo(Long userNo);
+
+    List<ResumeDTO> searchResumes(String keyword);
+    List<ResumeDTO> getResumesByJobType(String jobType);
+    List<ResumeDTO> getResumesByLocation(String location);
 }

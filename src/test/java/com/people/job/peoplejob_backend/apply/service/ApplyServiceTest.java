@@ -60,30 +60,30 @@ class ApplyServiceTest {
     @Test
     @DisplayName("지원하기 성공 테스트")
     void applyToJobSuccess() {
-        // Given - 중복 지원이 아닌 경우
-        when(applyRepository.existsByResumeNoAndJobNo(1L, 1L)).thenReturn(false); // 실제 Repository 메서드명
+        // Given - 중복 지원이 아닌 경우 (userNo + jobNo 기준으로 중복 확인)
+        when(applyRepository.existsByUserNoAndJobNo(1L, 1L)).thenReturn(false);
         when(applyRepository.save(any(ApplyEntity.class))).thenReturn(testApplyEntity);
 
         // When
         assertDoesNotThrow(() -> applyService.applyToJob(testApplyDTO));
 
         // Then
-        verify(applyRepository).existsByResumeNoAndJobNo(1L, 1L);
+        verify(applyRepository).existsByUserNoAndJobNo(1L, 1L);
         verify(applyRepository).save(any(ApplyEntity.class));
     }
 
     @Test
     @DisplayName("중복 지원 시 예외 발생 테스트")
     void applyToJobDuplicate() {
-        // Given - 이미 지원한 경우
-        when(applyRepository.existsByResumeNoAndJobNo(1L, 1L)).thenReturn(true);
+        // Given - 이미 지원한 경우 (userNo + jobNo 기준)
+        when(applyRepository.existsByUserNoAndJobNo(1L, 1L)).thenReturn(true);
 
         // When & Then
         RuntimeException exception = assertThrows(RuntimeException.class,
                 () -> applyService.applyToJob(testApplyDTO));
         assertEquals("이미 지원한 공고입니다.", exception.getMessage());
 
-        verify(applyRepository).existsByResumeNoAndJobNo(1L, 1L);
+        verify(applyRepository).existsByUserNoAndJobNo(1L, 1L);
         verify(applyRepository, never()).save(any(ApplyEntity.class));
     }
 

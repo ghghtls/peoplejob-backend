@@ -50,6 +50,12 @@ public class ScrapServiceImpl implements ScrapService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public boolean isScraped(Long userNo, Long jobNo) {
+        return scrapRepository.existsByUserNoAndJobNo(userNo, jobNo);
+    }
+
+    @Override
     @Transactional
     public void deleteScrapByUserAndJob(Long userNo, Long jobNo) {
         // findByUserNoAndJobopeningNo -> findByUserNoAndJobNo

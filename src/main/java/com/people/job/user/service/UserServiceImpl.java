@@ -3,6 +3,7 @@ package com.people.job.user.service;
 import com.people.job.user.dto.UserDTO;
 import com.people.job.user.entity.UserEntity;
 import com.people.job.user.repository.UserRepository;
+import com.people.job.user.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,6 +19,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -29,6 +31,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtTokenProvider jwtTokenProvider;
 
     @Value("${file.upload.path:/uploads}")
     private String uploadPath;
@@ -50,18 +53,34 @@ public class UserServiceImpl implements UserService {
                 throw new RuntimeException("이미 사용중인 이메일입니다.");
             }
 
+            // userType 변환: 프론트에서 "user"/"individual"/"company" (소문자) 가능
+            String rawType = dto.getUserType() == null ? "INDIVIDUAL"
+                    : dto.getUserType().trim().toUpperCase();
+            if ("USER".equals(rawType)) rawType = "INDIVIDUAL";
+            UserEntity.UserType userType;
+            try {
+                userType = UserEntity.UserType.valueOf(rawType);
+            } catch (IllegalArgumentException e) {
+                userType = UserEntity.UserType.INDIVIDUAL;
+            }
+
+            // userType에 따라 role 결정
+            UserEntity.UserRole role = (userType == UserEntity.UserType.COMPANY)
+                    ? UserEntity.UserRole.COMPANY
+                    : UserEntity.UserRole.USER;
+
             // UserEntity 생성
             UserEntity user = UserEntity.builder()
                     .userid(dto.getUserid())
                     .password(passwordEncoder.encode(dto.getPassword()))
-                    .username(dto.getUsername()) // name -> username으로 수정
+                    .username(dto.getUsername())
                     .email(dto.getEmail())
                     .phone(dto.getPhone())
                     .address(dto.getAddress())
-                    .userType(UserEntity.UserType.valueOf(dto.getUserType()))
-                    .role(UserEntity.UserRole.USER)
+                    .userType(userType)
+                    .role(role)
                     .isActive(true)
-                    .isEmailVerified(false)
+                    .isEmailVerified(true)
                     .build();
 
             userRepository.save(user);
@@ -88,12 +107,21 @@ public class UserServiceImpl implements UserService {
                 throw new RuntimeException("비활성화된 계정입니다.");
             }
 
+            String token = jwtTokenProvider.createToken(user.getUserid(), user.getRole().name());
             log.info("로그인 성공 - userid: {}", userid);
 
-            return Map.of(
-                    "message", "로그인 성공",
-                    "user", convertToDTO(user)
-            );
+            // auth_service.dart 가 최상위에서 읽는 필드들 포함
+            Map<String, Object> result = new HashMap<>();
+            result.put("message", "로그인 성공");
+            result.put("token", token);
+            result.put("userid", user.getUserid());
+            result.put("userNo", user.getUserNo());
+            result.put("userType", user.getUserType().name());
+            result.put("role", user.getRole().name());
+            result.put("name", user.getUserRealName());
+            result.put("email", user.getEmail());
+            result.put("user", convertToDTO(user));
+            return result;
         } catch (Exception e) {
             log.error("로그인 실패", e);
             throw new RuntimeException(e.getMessage());

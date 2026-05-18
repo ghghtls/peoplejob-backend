@@ -14,7 +14,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*") // 개발용 CORS 설정
 public class UserController {
 
     private final UserService userService;

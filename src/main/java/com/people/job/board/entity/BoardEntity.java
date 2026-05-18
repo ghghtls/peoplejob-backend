@@ -22,6 +22,9 @@ public class BoardEntity {
     private String category;  // 예: 자료실, 공지사항, 뉴스
 
     private String title;
+
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String content;
 
     private String writer;

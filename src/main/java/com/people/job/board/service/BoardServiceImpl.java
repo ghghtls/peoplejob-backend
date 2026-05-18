@@ -73,6 +73,13 @@ public class BoardServiceImpl implements BoardService {
     }
 
     @Override
+    public List<BoardDTO> searchBoards(String keyword) {
+        return boardRepository.findByTitleContainingOrContentContaining(keyword, keyword).stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public void increaseViewCount(Long boardNo) {
         BoardEntity entity = boardRepository.findById(boardNo)
                 .orElseThrow(() -> new RuntimeException("게시글이 없습니다."));

@@ -1,5 +1,6 @@
 package com.people.job.job.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.people.job.job.entity.JobopeningEntity;
 import lombok.*;
 
@@ -23,8 +24,11 @@ public class JobopeningDTO {
     private String workType;
     private String experience;
     private String education;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate deadline;
-    private LocalDate regdate; // DB 스키마와 맞춤 (LocalDate 타입)
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+    private LocalDate regdate;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedAt;
     private Integer viewCount;
     private Boolean isActive;
@@ -36,6 +40,9 @@ public class JobopeningDTO {
     private Boolean canPublish;
     private Boolean canDelete;
     private Boolean isExpired;
+    private Boolean isAdvertised;
+    private String filename;
+    private String originalFilename;
 
     public static JobopeningDTO fromEntity(JobopeningEntity entity) {
         return JobopeningDTO.builder()
@@ -63,6 +70,9 @@ public class JobopeningDTO {
                 .canPublish(entity.canBePublished())
                 .canDelete(entity.isDraft() || (entity.getStatus() != null && entity.getStatus() == JobopeningEntity.JobStatus.REJECTED))
                 .isExpired(entity.isDeadlinePassed())
+                .isAdvertised(entity.getIsAdvertised() != null && entity.getIsAdvertised())
+                .filename(entity.getFilename())
+                .originalFilename(entity.getOriginalFilename())
                 .build();
     }
 
@@ -85,6 +95,9 @@ public class JobopeningDTO {
                 .status(this.status != null ?
                         JobopeningEntity.JobStatus.valueOf(this.status) :
                         JobopeningEntity.JobStatus.DRAFT)
+                .isAdvertised(this.isAdvertised != null ? this.isAdvertised : false)
+                .filename(this.filename)
+                .originalFilename(this.originalFilename)
                 .build();
     }
 }

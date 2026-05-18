@@ -33,10 +33,8 @@ public class MypageServiceImpl implements MypageService {
 
     @Override
     public List<ApplyDTO> getMyApplies(Long userNo) {
-        // 내 이력서들 → 각 이력서의 지원내역
-        List<ResumeEntity> resumes = resumeRepository.findByUserNo(userNo);
-        return resumes.stream()
-                .flatMap(r -> applyRepository.findByResumeNo(r.getResumeNo()).stream())
+        // userNo 직접 조회 — 이전 이력서별 N+1 쿼리 제거
+        return applyRepository.findByUserNoOrderByApplyDateDesc(userNo).stream()
                 .map(this::toApplyDTO)
                 .collect(Collectors.toList());
     }

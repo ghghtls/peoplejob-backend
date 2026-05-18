@@ -3,8 +3,11 @@ package com.people.job.job.service;
 import com.people.job.job.dto.JobopeningDTO;
 import com.people.job.job.entity.JobopeningEntity;
 import com.people.job.job.repository.JobopeningRepository;
+import com.people.job.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -22,10 +25,22 @@ import java.util.Map;
 public class JobopeningServiceImpl implements JobopeningService {
 
     private final JobopeningRepository jobRepository;
+    private final UserRepository userRepository;
 
     @Override
+    @CacheEvict(value = "publishedJobs", allEntries = true)
     public JobopeningDTO create(JobopeningDTO dto) {
-        // 기본적으로 임시저장 상태로 생성
+        // company가 없으면 userNo로 회사명 자동 조회
+        if ((dto.getCompany() == null || dto.getCompany().isBlank()) && dto.getUserNo() != null) {
+            userRepository.findById(dto.getUserNo()).ifPresent(user -> {
+                String name = user.getCompanyName() != null ? user.getCompanyName() : user.getUsername();
+                dto.setCompany(name != null ? name : "미등록");
+            });
+        }
+        if (dto.getCompany() == null || dto.getCompany().isBlank()) {
+            dto.setCompany("미등록");
+        }
+
         dto.setStatus("DRAFT");
         JobopeningEntity entity = dto.toEntity();
         JobopeningEntity saved = jobRepository.save(entity);
@@ -35,12 +50,11 @@ public class JobopeningServiceImpl implements JobopeningService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional  // readOnly 제거 — 조회수 write가 포함되어 있음
     public JobopeningDTO getById(Long jobNo) {
         JobopeningEntity entity = jobRepository.findByJobNoAndIsActiveTrue(jobNo)
                 .orElseThrow(() -> new RuntimeException("채용공고를 찾을 수 없습니다."));
 
-        // 게시중인 경우에만 조회수 증가 (임시저장은 조회수 증가 안함)
         if (entity.isPublished()) {
             entity.setViewCount(entity.getViewCount() + 1);
             jobRepository.save(entity);
@@ -50,19 +64,22 @@ public class JobopeningServiceImpl implements JobopeningService {
     }
 
     @Override
+    @CacheEvict(value = "publishedJobs", allEntries = true)
     public JobopeningDTO update(Long jobNo, JobopeningDTO dto) {
         JobopeningEntity entity = jobRepository.findByJobNoAndIsActiveTrue(jobNo)
                 .orElseThrow(() -> new RuntimeException("채용공고를 찾을 수 없습니다."));
 
-        // 수정 가능한 상태인지 확인
-        if (!entity.canBeEdited()) {
-            throw new RuntimeException("현재 상태에서는 수정할 수 없습니다.");
+        // 관리자가 중단한 경우만 수정 불가
+        if (entity.getStatus() == JobopeningEntity.JobStatus.SUSPENDED) {
+            throw new RuntimeException("관리자에 의해 중단된 채용공고는 수정할 수 없습니다.");
         }
 
         // 필드 업데이트
         entity.setTitle(dto.getTitle());
         entity.setContent(dto.getContent());
-        entity.setCompany(dto.getCompany());
+        if (dto.getCompany() != null && !dto.getCompany().isBlank()) {
+            entity.setCompany(dto.getCompany());
+        }
         entity.setLocation(dto.getLocation());
         entity.setJobType(dto.getJobType());
         entity.setSalary(dto.getSalary());
@@ -70,6 +87,8 @@ public class JobopeningServiceImpl implements JobopeningService {
         entity.setExperience(dto.getExperience());
         entity.setEducation(dto.getEducation());
         entity.setDeadline(dto.getDeadline());
+        if (dto.getFilename() != null) entity.setFilename(dto.getFilename());
+        if (dto.getOriginalFilename() != null) entity.setOriginalFilename(dto.getOriginalFilename());
 
         JobopeningEntity updated = jobRepository.save(entity);
         log.info("채용공고 수정 완료 - jobNo: {}", jobNo);
@@ -78,13 +97,14 @@ public class JobopeningServiceImpl implements JobopeningService {
     }
 
     @Override
+    @CacheEvict(value = "publishedJobs", allEntries = true)
     public void delete(Long jobNo) {
         JobopeningEntity entity = jobRepository.findByJobNoAndIsActiveTrue(jobNo)
                 .orElseThrow(() -> new RuntimeException("채용공고를 찾을 수 없습니다."));
 
-        // 삭제 가능한 상태인지 확인 (임시저장 또는 승인거부 상태만)
-        if (!entity.isDraft() && entity.getStatus() != JobopeningEntity.JobStatus.REJECTED) {
-            throw new RuntimeException("현재 상태에서는 삭제할 수 없습니다.");
+        // 관리자가 중단한 경우만 삭제 불가
+        if (entity.getStatus() == JobopeningEntity.JobStatus.SUSPENDED) {
+            throw new RuntimeException("관리자에 의해 중단된 채용공고는 삭제할 수 없습니다.");
         }
 
         entity.setIsActive(false);
@@ -129,6 +149,7 @@ public class JobopeningServiceImpl implements JobopeningService {
     }
 
     @Override
+    @CacheEvict(value = "publishedJobs", allEntries = true)
     public JobopeningDTO publish(Long jobNo, Long userNo) {
         JobopeningEntity entity = jobRepository.findByJobNoAndIsActiveTrue(jobNo)
                 .orElseThrow(() -> new RuntimeException("채용공고를 찾을 수 없습니다."));
@@ -151,6 +172,7 @@ public class JobopeningServiceImpl implements JobopeningService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "publishedJobs", key = "#pageable.pageNumber + '-' + #pageable.pageSize")
     public Page<JobopeningDTO> getPublishedJobs(Pageable pageable) {
         return jobRepository.findPublishedJobs(pageable)
                 .map(JobopeningDTO::fromEntity);
@@ -178,12 +200,13 @@ public class JobopeningServiceImpl implements JobopeningService {
     }
 
     @Override
+    @CacheEvict(value = "publishedJobs", allEntries = true)
     public JobopeningDTO changeStatus(Long jobNo, String status, Long userNo) {
         JobopeningEntity entity = jobRepository.findByJobNoAndIsActiveTrue(jobNo)
                 .orElseThrow(() -> new RuntimeException("채용공고를 찾을 수 없습니다."));
 
-        // 권한 확인
-        if (!entity.getUserNo().equals(userNo)) {
+        // 권한 확인 — userNo null이면 관리자 호출(스케줄러/admin API)로 간주
+        if (userNo != null && !entity.getUserNo().equals(userNo)) {
             throw new RuntimeException("권한이 없습니다.");
         }
 
@@ -205,6 +228,7 @@ public class JobopeningServiceImpl implements JobopeningService {
     }
 
     @Override
+    @CacheEvict(value = "publishedJobs", allEntries = true)
     public void expireOverdueJobs() {
         List<JobopeningEntity> expiredJobs = jobRepository.findExpiredJobs(LocalDate.now());
 
@@ -222,8 +246,16 @@ public class JobopeningServiceImpl implements JobopeningService {
     @Override
     @Transactional(readOnly = true)
     public Page<JobopeningDTO> searchJobs(String keyword, Pageable pageable) {
-        return jobRepository.searchPublishedJobs(keyword, pageable)
-                .map(JobopeningDTO::fromEntity);
+        try {
+            // FULLTEXT INDEX가 있으면 대용량에서 10배+ 빠름
+            // 없으면 catch → LIKE 검색으로 자동 폴백
+            return jobRepository.fullTextSearchPublishedJobs(keyword, pageable)
+                    .map(JobopeningDTO::fromEntity);
+        } catch (Exception e) {
+            log.warn("FULLTEXT 검색 실패 → LIKE 검색으로 폴백 (ALTER TABLE jobopening ADD FULLTEXT INDEX ft_job_search (title, content, company); 실행 필요): {}", e.getMessage());
+            return jobRepository.searchPublishedJobs(keyword, pageable)
+                    .map(JobopeningDTO::fromEntity);
+        }
     }
 
     @Override

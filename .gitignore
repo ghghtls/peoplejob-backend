@@ -41,6 +41,11 @@ mysql-data/
 
 src/main/resources/application.yml
 src/main/resources/application-*.yml
+src/main/resources/application-*.properties
+src/main/resources/application.properties
+
+# Claude memory
+.claude/
 
 # ==================== CI/CD 추가 부분 ====================
 
@@ -77,3 +82,8 @@ target/jmeter/
 
 # Docker 볼륨 데이터
 volumes/
+
+# 배포 아티팩트
+app.zip
+application.jar
+Procfile

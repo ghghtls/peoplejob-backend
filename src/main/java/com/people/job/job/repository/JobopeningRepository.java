@@ -22,8 +22,8 @@ public interface JobopeningRepository extends JpaRepository<JobopeningEntity, Lo
     Page<JobopeningEntity> findByUserNoAndIsActiveTrueOrderByRegdateDesc(Long userNo, Pageable pageable);
 
 
-    // 게시중인 채용공고만 조회 (일반 사용자용)
-    @Query("SELECT j FROM JobopeningEntity j WHERE j.status = 'PUBLISHED' AND j.isActive = true ORDER BY j.regdate DESC")
+    // 게시중인 채용공고만 조회 (일반 사용자용) - 광고 공고 우선 정렬
+    @Query("SELECT j FROM JobopeningEntity j WHERE j.status = 'PUBLISHED' AND j.isActive = true ORDER BY j.isAdvertised DESC, j.regdate DESC")
     Page<JobopeningEntity> findPublishedJobs(Pageable pageable);
 
     // 특정 사용자의 모든 채용공고 (상태별)
@@ -46,17 +46,31 @@ public interface JobopeningRepository extends JpaRepository<JobopeningEntity, Lo
     @Query("SELECT COUNT(j) FROM JobopeningEntity j WHERE j.userNo = :userNo AND j.status = :status AND j.isActive = true")
     long countByUserNoAndStatus(@Param("userNo") Long userNo, @Param("status") JobopeningEntity.JobStatus status);
 
-    // 검색 (게시중인 것만)
+    // 검색 — LIKE (테스트/FULLTEXT 인덱스 없는 환경 호환용)
     @Query("SELECT j FROM JobopeningEntity j WHERE j.status = 'PUBLISHED' AND j.isActive = true " +
             "AND (j.title LIKE %:keyword% OR j.content LIKE %:keyword% OR j.company LIKE %:keyword%) " +
-            "ORDER BY j.regdate DESC")
+            "ORDER BY j.isAdvertised DESC, j.regdate DESC")
     Page<JobopeningEntity> searchPublishedJobs(@Param("keyword") String keyword, Pageable pageable);
+
+    // 검색 — MySQL FULLTEXT (운영 환경, LIKE보다 10배 이상 빠름)
+    // 사전 실행 필요: ALTER TABLE jobopening ADD FULLTEXT INDEX ft_job_search (title, content, company);
+    @Query(value =
+            "SELECT * FROM jobopening " +
+            "WHERE status = 'PUBLISHED' AND isActive = 1 " +
+            "AND MATCH(title, content, company) AGAINST(:keyword IN BOOLEAN MODE) " +
+            "ORDER BY isAdvertised DESC, regdate DESC",
+            countQuery =
+            "SELECT COUNT(*) FROM jobopening " +
+            "WHERE status = 'PUBLISHED' AND isActive = 1 " +
+            "AND MATCH(title, content, company) AGAINST(:keyword IN BOOLEAN MODE)",
+            nativeQuery = true)
+    Page<JobopeningEntity> fullTextSearchPublishedJobs(@Param("keyword") String keyword, Pageable pageable);
 
     // 카테고리별 조회 (게시중인 것만)
     @Query("SELECT j FROM JobopeningEntity j WHERE j.status = 'PUBLISHED' AND j.isActive = true " +
             "AND (:jobType IS NULL OR j.jobType = :jobType) " +
             "AND (:location IS NULL OR j.location = :location) " +
-            "ORDER BY j.regdate DESC")
+            "ORDER BY j.isAdvertised DESC, j.regdate DESC")
     Page<JobopeningEntity> findPublishedJobsByCategory(
             @Param("jobType") String jobType,
             @Param("location") String location,

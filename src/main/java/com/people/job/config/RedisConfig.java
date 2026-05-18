@@ -11,19 +11,24 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CachingConfigurer;
 import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.cache.interceptor.CacheErrorHandler;
+import org.springframework.cache.interceptor.SimpleCacheErrorHandler;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 
 import java.time.Duration;
 
-/**
- * Redis 설정 클래스
- * 캐싱, 세션 관리, 임시 데이터 저장 등을 위한 Redis 설정
- */
 @Configuration
 @EnableCaching
-public class RedisConfig {
+public class RedisConfig implements CachingConfigurer {
+
+    @Override
+    public CacheErrorHandler errorHandler() {
+        // Redis 장애 시 예외를 삼키고 실제 메서드를 실행 (캐시 miss 처럼 동작)
+        return new SimpleCacheErrorHandler();
+    }
 
     @Value("${spring.data.redis.host}")
     private String redisHost;

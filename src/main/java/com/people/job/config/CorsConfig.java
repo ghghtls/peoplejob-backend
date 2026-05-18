@@ -1,24 +1,7 @@
 package com.people.job.config;
 
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-
-@Configuration
+// CORS는 WebSecurityConfig.corsConfigurationSource() 와 WebConfig.addCorsMappings() 에서 처리
+// 이 클래스의 corsConfigurer() 는 allowedOrigins("*") + allowCredentials(false) 조합으로
+// WebConfig의 allowedOriginPatterns("*") + allowCredentials(true) 와 충돌하므로 제거
 public class CorsConfig {
-
-    @Bean
-    public WebMvcConfigurer corsConfigurer() {
-        return new WebMvcConfigurer() {
-            @Override
-            public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/**") // 전체 경로 허용
-                        .allowedOrigins("*") // 전체 origin 허용 (개발용)
-                        .allowedMethods("*") // GET, POST 등 모든 메서드 허용
-                        .allowedHeaders("*") // 모든 헤더 허용
-                        .allowCredentials(false); // 인증정보(Cookie 등) 허용 안 함
-            }
-        };
-    }
 }

@@ -7,6 +7,7 @@ import com.people.job.inquiry.dto.InquiryDTO;
 import com.people.job.admin.dto.DashboardDTO;
 
 import java.util.List;
+import java.util.Map;
 
 public interface AdminService {
 
@@ -27,4 +28,6 @@ public interface AdminService {
     List<PaymentDTO> getAllPayments();
 
     DashboardDTO getDashboardStats();
+
+    List<Map<String, Object>> getAllApplicants();
 }

@@ -19,4 +19,6 @@ public interface BoardService {
     void deleteBoard(Long boardNo);
 
     void increaseViewCount(Long boardNo);
+
+    List<BoardDTO> searchBoards(String keyword);
 }

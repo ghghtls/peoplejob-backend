@@ -25,7 +25,7 @@ public class AdminAuthAspect {
         }
 
         UserEntity user = (UserEntity) principal;
-        if (!"ROLE_ADMIN".equals(user.getRole())) {
+        if (user.getRole() != UserEntity.UserRole.ADMIN) {
             throw new RuntimeException("관리자 권한이 필요합니다.");
         }
     }

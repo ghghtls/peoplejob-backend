@@ -11,9 +11,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Files;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
@@ -107,6 +110,59 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
+    public Map<String, String> uploadJobAttachment(MultipartFile file) throws Exception {
+        if (file == null || file.isEmpty()) {
+            throw new Exception("파일이 비어있습니다.");
+        }
+        if (file.getSize() > MAX_DOCUMENT_SIZE) {
+            throw new Exception("파일 크기는 10MB를 초과할 수 없습니다.");
+        }
+
+        String extension = getFileExtension(file.getOriginalFilename()).toLowerCase();
+        List<String> allowed = new java.util.ArrayList<>(ALLOWED_IMAGE_EXTENSIONS);
+        allowed.addAll(ALLOWED_DOCUMENT_EXTENSIONS);
+        if (!allowed.contains(extension)) {
+            throw new Exception("허용되지 않은 파일 형식입니다. (이미지 또는 문서 파일만 허용)");
+        }
+
+        String fileName = generateFileName(file.getOriginalFilename(), "job_attachment");
+        String fileUrl = saveFile(file, fileName, "job/attachments");
+
+        Map<String, String> result = new HashMap<>();
+        result.put("fileUrl", fileUrl);
+        result.put("originalName", file.getOriginalFilename());
+        result.put("fileName", fileName);
+        return result;
+    }
+
+    @Override
+    public Map<String, String> uploadBoardFile(MultipartFile file) throws Exception {
+        if (file == null || file.isEmpty()) {
+            throw new Exception("파일이 비어있습니다.");
+        }
+        if (file.getSize() > MAX_DOCUMENT_SIZE) {
+            throw new Exception("파일 크기는 10MB를 초과할 수 없습니다.");
+        }
+
+        String extension = getFileExtension(file.getOriginalFilename()).toLowerCase();
+        List<String> allowed = new java.util.ArrayList<>(ALLOWED_IMAGE_EXTENSIONS);
+        allowed.addAll(ALLOWED_DOCUMENT_EXTENSIONS);
+        if (!allowed.contains(extension)) {
+            throw new Exception("허용되지 않은 파일 형식입니다. (이미지 또는 문서 파일만 허용)");
+        }
+
+        String fileName = generateFileName(file.getOriginalFilename(), "board_file");
+        String subDirectory = "board/files";
+        String fileUrl = saveFile(file, fileName, subDirectory);
+
+        Map<String, String> result = new HashMap<>();
+        result.put("fileUrl", fileUrl);
+        result.put("originalName", file.getOriginalFilename());
+        result.put("fileName", fileName);
+        return result;
+    }
+
+    @Override
     public boolean deleteFile(String fileUrl) throws Exception {
         try {
             // URL에서 파일 경로 추출
@@ -176,6 +232,37 @@ public class FileServiceImpl implements FileService {
         } catch (Exception e) {
             log.error("파일 다운로드 실패: {}", fileUrl, e);
             throw new Exception("파일 다운로드 중 오류가 발생했습니다: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public byte[] downloadMultipleAsZip(List<String> fileUrls, String zipFileName) throws Exception {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             ZipOutputStream zos = new ZipOutputStream(baos)) {
+
+            for (String fileUrl : fileUrls) {
+                String relativePath = fileUrl.replace(uploadUrl, "");
+                if (relativePath.startsWith("/")) {
+                    relativePath = relativePath.substring(1);
+                }
+                Path filePath = Paths.get(uploadPath, relativePath);
+
+                if (!Files.exists(filePath)) {
+                    log.warn("ZIP 대상 파일 없음, 건너뜀: {}", fileUrl);
+                    continue;
+                }
+
+                zos.putNextEntry(new ZipEntry(filePath.getFileName().toString()));
+                Files.copy(filePath, zos);
+                zos.closeEntry();
+            }
+
+            zos.finish();
+            return baos.toByteArray();
+
+        } catch (IOException e) {
+            log.error("ZIP 생성 실패", e);
+            throw new Exception("ZIP 파일 생성 중 오류가 발생했습니다: " + e.getMessage());
         }
     }
 

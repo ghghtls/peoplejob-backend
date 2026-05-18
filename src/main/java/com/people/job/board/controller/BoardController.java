@@ -49,4 +49,15 @@ public class BoardController {
         boardService.deleteBoard(boardNo);
         return ResponseEntity.ok("게시글 삭제 완료");
     }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<BoardDTO>> search(@RequestParam String keyword) {
+        return ResponseEntity.ok(boardService.searchBoards(keyword));
+    }
+
+    @PatchMapping("/{boardNo}/view")
+    public ResponseEntity<?> increaseView(@PathVariable Long boardNo) {
+        boardService.increaseViewCount(boardNo);
+        return ResponseEntity.ok("조회수 증가 완료");
+    }
 }

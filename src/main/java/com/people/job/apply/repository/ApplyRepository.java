@@ -18,6 +18,8 @@ public interface ApplyRepository extends JpaRepository<ApplyEntity, Long> {
     // DB 스키마에 맞게 필드명 수정 (jobopeningNo -> jobNo)
     boolean existsByResumeNoAndJobNo(Long resumeNo, Long jobNo);
 
+    boolean existsByJobNoAndUserNo(Long jobNo, Long userNo);
+
     List<ApplyEntity> findByResumeNo(Long resumeNo);
 
     List<ApplyEntity> findByJobNo(Long jobNo);
@@ -76,4 +78,7 @@ public interface ApplyRepository extends JpaRepository<ApplyEntity, Long> {
     // 최근 지원 내역 (개수 제한) — Pageable의 size로 개수 제어
     @Query("SELECT a FROM ApplyEntity a WHERE a.userNo = :userNo ORDER BY a.applyDate DESC")
     List<ApplyEntity> findRecentAppliesByUser(@Param("userNo") Long userNo, Pageable pageable);
+
+    // 사용자 전체 지원 내역 (페이징 없음) — MypageService N+1 제거용
+    List<ApplyEntity> findByUserNoOrderByApplyDateDesc(Long userNo);
 }

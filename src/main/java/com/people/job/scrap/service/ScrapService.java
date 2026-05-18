@@ -13,4 +13,6 @@ public interface ScrapService {
     void deleteScrap(Long scrapNo);
 
     void deleteScrapByUserAndJob(Long userNo, Long jobopeningNo);
+
+    boolean isScraped(Long userNo, Long jobNo);
 }

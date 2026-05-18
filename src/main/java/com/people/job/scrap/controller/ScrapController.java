@@ -1,6 +1,7 @@
 package com.people.job.scrap.controller;
 
 import com.people.job.scrap.dto.ScrapDTO;
+import com.people.job.scrap.repository.ScrapRepository;
 import com.people.job.scrap.service.ScrapService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +15,7 @@ import java.util.List;
 public class ScrapController {
 
     private final ScrapService scrapService;
+    private final ScrapRepository scrapRepository;
 
     // 스크랩 등록
     @PostMapping
@@ -41,5 +43,12 @@ public class ScrapController {
                                                 @RequestParam Long jobopeningNo) {
         scrapService.deleteScrapByUserAndJob(userNo, jobopeningNo);
         return ResponseEntity.ok("스크랩 취소 완료");
+    }
+
+    // 스크랩 여부 확인
+    @GetMapping("/check")
+    public ResponseEntity<Boolean> checkScrap(@RequestParam Integer jobNo,
+                                              @RequestParam Integer userNo) {
+        return ResponseEntity.ok(scrapRepository.existsByJobNoAndUserNo(jobNo.longValue(), userNo.longValue()));
     }
 }

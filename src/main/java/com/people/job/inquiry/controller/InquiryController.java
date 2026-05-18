@@ -24,6 +24,12 @@ public class InquiryController {
 
 
 
+    // 사용자 - 내 문의 조회
+    @GetMapping("/my")
+    public ResponseEntity<List<InquiryDTO>> myInquiries(@RequestParam String email) {
+        return ResponseEntity.ok(inquiryService.getInquiriesByEmail(email));
+    }
+
     // 관리자 - 전체 문의 조회
     @GetMapping
     public ResponseEntity<List<InquiryDTO>> allInquiries() {

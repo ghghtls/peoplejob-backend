@@ -56,4 +56,19 @@ public class ResumeController {
     public ResponseEntity<List<ResumeDTO>> selectByUser(@PathVariable Long userNo) {
         return ResponseEntity.ok(resumeService.selectByUserNo(userNo));
     }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<ResumeDTO>> search(@RequestParam String keyword) {
+        return ResponseEntity.ok(resumeService.searchResumes(keyword));
+    }
+
+    @GetMapping("/jobtype/{jobType}")
+    public ResponseEntity<List<ResumeDTO>> getByJobType(@PathVariable String jobType) {
+        return ResponseEntity.ok(resumeService.getResumesByJobType(jobType));
+    }
+
+    @GetMapping("/location/{location}")
+    public ResponseEntity<List<ResumeDTO>> getByLocation(@PathVariable String location) {
+        return ResponseEntity.ok(resumeService.getResumesByLocation(location));
+    }
 }

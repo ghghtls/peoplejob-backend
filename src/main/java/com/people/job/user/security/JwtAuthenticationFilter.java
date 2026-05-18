@@ -23,22 +23,35 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtTokenProvider jwtTokenProvider;
     private final CustomUserDetailsService customUserDetailsService;
 
-    // 공개 경로 화이트리스트 (필터 스킵)
+    // 메서드 무관 공개 경로
     private static final List<String> PUBLIC_ENDPOINTS = List.of(
             "/", "/index.html", "/favicon.ico", "/error",
             "/swagger-ui/**", "/v3/api-docs/**",
             "/actuator/health", "/actuator/info",
             "/api/users/login", "/api/users/register", "/api/users/verify", "/api/users/check/**",
-            // 읽기 전용 공개 API
-            "/api/job/**", "/api/board/**"
+            "/api/board/**"
+    );
+
+    // GET 전용 공개 경로 — 개별 job 상세(/api/jobs/{id})는 permit이지만
+    // /api/jobs/user/** 처럼 인증이 필요한 하위 경로와 충돌하므로 ** 는 쓰지 않는다
+    private static final List<String> GET_ONLY_PUBLIC_ENDPOINTS = List.of(
+            "/api/jobs",
+            "/api/jobs/search",
+            "/api/jobs/category"
     );
 
     private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
 
     private boolean isPublic(HttpServletRequest request) {
         String path = request.getRequestURI();
+        String method = request.getMethod();
         for (String pattern : PUBLIC_ENDPOINTS) {
             if (PATH_MATCHER.match(pattern, path)) return true;
+        }
+        if (HttpMethod.GET.matches(method)) {
+            for (String pattern : GET_ONLY_PUBLIC_ENDPOINTS) {
+                if (PATH_MATCHER.match(pattern, path)) return true;
+            }
         }
         return false;
     }

@@ -3,6 +3,7 @@ package com.people.job.scheduler;
 import com.people.job.token.TokenCacheService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Component;
 public class RedisScheduledTasks {
 
     private final TokenCacheService tokenCacheService;
+    private final StringRedisTemplate stringRedisTemplate;
 
     /**
      * 만료된 토큰 정리 - 매일 새벽 2시 실행
@@ -38,9 +40,8 @@ public class RedisScheduledTasks {
     public void checkRedisConnection() {
         log.debug("Performing Redis connection health check...");
         try {
-            // 단순한 연결 테스트를 위해 토큰 TTL 조회 시도
-            long ttl = tokenCacheService.getTokenTTL("test", "connection_check");
-            log.debug("Redis connection health check completed - TTL result: {}", ttl);
+            stringRedisTemplate.hasKey("health:ping");
+            log.debug("Redis connection health check completed");
         } catch (Exception e) {
             log.error("Redis connection health check failed: {}", e.getMessage());
         }

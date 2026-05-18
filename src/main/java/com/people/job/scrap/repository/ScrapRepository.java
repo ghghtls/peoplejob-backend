@@ -18,6 +18,8 @@ public interface ScrapRepository extends JpaRepository<ScrapEntity, Long> {
     // 스크랩 여부
     boolean existsByUserNoAndJobNo(Long userNo, Long jobNo);
 
+    boolean existsByJobNoAndUserNo(Long jobNo, Long userNo);
+
     // 사용자별 스크랩 조회
     List<ScrapEntity> findByUserNo(Long userNo);
 
