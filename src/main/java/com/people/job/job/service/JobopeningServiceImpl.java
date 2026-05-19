@@ -65,9 +65,13 @@ public class JobopeningServiceImpl implements JobopeningService {
 
     @Override
     @CacheEvict(value = "publishedJobs", allEntries = true)
-    public JobopeningDTO update(Long jobNo, JobopeningDTO dto) {
+    public JobopeningDTO update(Long jobNo, JobopeningDTO dto, Long userNo) {
         JobopeningEntity entity = jobRepository.findByJobNoAndIsActiveTrue(jobNo)
                 .orElseThrow(() -> new RuntimeException("채용공고를 찾을 수 없습니다."));
+
+        if (!entity.getUserNo().equals(userNo)) {
+            throw new RuntimeException("권한이 없습니다.");
+        }
 
         // 관리자가 중단한 경우만 수정 불가
         if (entity.getStatus() == JobopeningEntity.JobStatus.SUSPENDED) {
@@ -98,9 +102,13 @@ public class JobopeningServiceImpl implements JobopeningService {
 
     @Override
     @CacheEvict(value = "publishedJobs", allEntries = true)
-    public void delete(Long jobNo) {
+    public void delete(Long jobNo, Long userNo) {
         JobopeningEntity entity = jobRepository.findByJobNoAndIsActiveTrue(jobNo)
                 .orElseThrow(() -> new RuntimeException("채용공고를 찾을 수 없습니다."));
+
+        if (!entity.getUserNo().equals(userNo)) {
+            throw new RuntimeException("권한이 없습니다.");
+        }
 
         // 관리자가 중단한 경우만 삭제 불가
         if (entity.getStatus() == JobopeningEntity.JobStatus.SUSPENDED) {
@@ -130,12 +138,11 @@ public class JobopeningServiceImpl implements JobopeningService {
 
 
     @Override
-    public JobopeningDTO saveDraft(JobopeningDTO dto) {
+    public JobopeningDTO saveDraft(JobopeningDTO dto, Long userNo) {
+        dto.setUserNo(userNo);
         if (dto.getJobNo() != null) {
-            // 기존 임시저장 수정
-            return update(dto.getJobNo(), dto);
+            return update(dto.getJobNo(), dto, userNo);
         } else {
-            // 새로운 임시저장 생성
             dto.setStatus("DRAFT");
             return create(dto);
         }

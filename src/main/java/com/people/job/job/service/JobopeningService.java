@@ -11,8 +11,8 @@ public interface JobopeningService {
 
     JobopeningDTO create(JobopeningDTO dto);
     JobopeningDTO getById(Long jobNo);
-    JobopeningDTO update(Long jobNo, JobopeningDTO dto);
-    void delete(Long jobNo);
+    JobopeningDTO update(Long jobNo, JobopeningDTO dto, Long userNo);
+    void delete(Long jobNo, Long userNo);
     Page<JobopeningDTO> getAll(Pageable pageable);
     Page<JobopeningDTO> getByUser(Long userNo, Pageable pageable);
 
@@ -20,7 +20,7 @@ public interface JobopeningService {
     /**
      * 임시저장
      */
-    JobopeningDTO saveDraft(JobopeningDTO dto);
+    JobopeningDTO saveDraft(JobopeningDTO dto, Long userNo);
 
     /**
      * 임시저장된 채용공고 목록 조회

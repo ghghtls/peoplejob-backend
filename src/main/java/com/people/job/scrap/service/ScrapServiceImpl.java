@@ -1,5 +1,7 @@
 package com.people.job.scrap.service;
 
+import com.people.job.job.entity.JobopeningEntity;
+import com.people.job.job.repository.JobopeningRepository;
 import com.people.job.scrap.dto.ScrapDTO;
 import com.people.job.scrap.entity.ScrapEntity;
 import com.people.job.scrap.repository.ScrapRepository;
@@ -16,6 +18,7 @@ import java.util.stream.Collectors;
 public class ScrapServiceImpl implements ScrapService {
 
     private final ScrapRepository scrapRepository;
+    private final JobopeningRepository jobopeningRepository;
 
     @Override
     @Transactional
@@ -65,11 +68,21 @@ public class ScrapServiceImpl implements ScrapService {
     }
 
     private ScrapDTO toDTO(ScrapEntity e) {
-        return ScrapDTO.builder()
+        ScrapDTO.ScrapDTOBuilder builder = ScrapDTO.builder()
                 .scrapNo(e.getScrapNo())
                 .userNo(e.getUserNo())
-                .jobNo(e.getJobNo())                 // jobopeningNo -> jobNo
-                .scrapDate(e.getScrapDate())         // regdate -> scrapDate
-                .build();
+                .jobNo(e.getJobNo())
+                .scrapDate(e.getScrapDate());
+
+        jobopeningRepository.findById(e.getJobNo()).ifPresent(job -> {
+            builder.jobTitle(job.getTitle())
+                   .companyName(job.getCompany())
+                   .location(job.getLocation())
+                   .jobType(job.getJobType())
+                   .deadline(job.getDeadline())
+                   .isExpired(job.getDeadline() != null && LocalDate.now().isAfter(job.getDeadline()));
+        });
+
+        return builder.build();
     }
 }
