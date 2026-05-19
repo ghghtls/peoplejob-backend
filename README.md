@@ -189,6 +189,26 @@ JWT 토큰 발급, 회원 CRUD, 이메일 인증, 비밀번호 재설정.
 | `/api/admin/applicants` | 지원자 전체 목록 |
 | `/api/admin/excel/applicants/{jobNo}` | 지원자 엑셀 다운로드 (Apache POI) |
 
+### 알림 `/api/notifications`
+
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| GET | `/api/notifications` | 알림 목록 조회 (페이지네이션) |
+| GET | `/api/notifications/unread` | 읽지 않은 알림 목록 |
+| GET | `/api/notifications/unread-count` | 읽지 않은 알림 개수 |
+| GET | `/api/notifications/stats` | 알림 통계 |
+| PUT | `/api/notifications/{id}/read` | 특정 알림 읽음 처리 |
+| PUT | `/api/notifications/read-all` | 전체 읽음 처리 |
+| PUT | `/api/notifications/bulk-read` | 일괄 읽음 처리 |
+| DELETE | `/api/notifications/{id}` | 특정 알림 삭제 |
+| DELETE | `/api/notifications/bulk-delete` | 일괄 삭제 |
+| DELETE | `/api/notifications/delete-all` | 전체 삭제 |
+| POST | `/api/notifications` | 알림 생성 (관리자용) |
+
+**알림 방식:** 프론트엔드가 `/api/notifications/unread-count`를 30초마다 폴링하는 방식으로 동작합니다. 별도의 WebSocket 또는 FCM 연동 없이 REST API 폴링만으로 미확인 알림 수를 감지합니다.
+
+**알림 발생 시점:** 지원자가 채용공고에 지원하거나 기업이 지원 상태를 변경할 때 백엔드에서 알림 엔티티를 DB에 저장하고, 프론트엔드가 다음 폴링 사이클에 이를 감지합니다.
+
 기타: 게시판(`/api/board`), 공지(`/api/notice`), 문의(`/api/inquiry`),  
 결제(`/api/payment`), 스크랩(`/api/scrap`), 파일(`/api/files`), 이메일(`/api/email`)
 
@@ -596,7 +616,20 @@ DEALLOCATE PREPARE stmt;
 
 ---
 
-### 이슈 7 — VS Code Java 확장의 argfile 오류로 백엔드 실행 불가
+### 이슈 7 — 프론트엔드 알림 폴링이 서버 중단 후에도 계속 요청을 보냄
+
+**증상:** 백엔드 서버를 종료한 후에도 Flutter 앱이 30초마다 `/api/notifications/unread-count`에 요청을 보냄. 전부 연결 실패로 끝나지만 요청이 멈추지 않아 서버 로그에 불필요한 접근 기록이 남음.
+
+**원인:** 프론트엔드의 `NotificationService.startPolling()`이 `while(true)` + `Future.delayed` 조합으로 구현되어 있었음. 외부에서 루프를 중단할 방법이 없었고, 요청 실패를 `catch`로 무시하도록 처리되어 있어 서버 다운 여부와 무관하게 영구 반복.
+
+**해결 (프론트엔드):**
+1. `while(true)` → `Timer.periodic`으로 교체해 `cancel()`로 언제든 중단 가능하도록 변경.
+2. 연속 실패 3회 누적 시 `stopPolling()`을 자동 호출해 서버 다운 상태에서 폴링 자동 종료.
+3. `NotificationNotifier.dispose()`에서 `stopPolling()`을 호출해 로그아웃·화면 이탈 시 타이머가 정리되도록 처리.
+
+---
+
+### 이슈 8 — VS Code Java 확장의 argfile 오류로 백엔드 실행 불가
 
 **증상:** Debug Java 버튼 실행 시 `Error: could not open cp_73pwye0zp9fggh2aqnr26lbx2.argfile` 오류 발생.  
 **원인:** VS Code Java 확장이 클래스패스를 임시 파일(argfile)로 전달하는데, 이 파일 생성에 실패하는 경우가 있음. 프로젝트 클래스패스가 길거나 환경 문제일 때 발생.  
