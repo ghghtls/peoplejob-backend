@@ -61,7 +61,7 @@ public class JobopeningDTO {
                 .experience(entity.getExperience())
                 .education(entity.getEducation())
                 .deadline(entity.getDeadline())
-                .regdate(LocalDate.from(entity.getRegdate())) // LocalDate 타입
+                .regdate(entity.getRegdate() != null ? entity.getRegdate().toLocalDate() : null)
                 .updatedAt(entity.getUpdatedAt())
                 .viewCount(entity.getViewCount())
                 .isActive(entity.getIsActive())

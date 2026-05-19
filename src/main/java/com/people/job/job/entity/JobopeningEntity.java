@@ -49,19 +49,23 @@ public class JobopeningEntity {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
+    @Builder.Default
     private Integer viewCount = 0;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private JobStatus status = JobStatus.DRAFT;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean isActive = true;
 
     @Column(nullable = false)
     private Long userNo;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean isAdvertised = false;
 
     private java.time.LocalDateTime adEndDate;

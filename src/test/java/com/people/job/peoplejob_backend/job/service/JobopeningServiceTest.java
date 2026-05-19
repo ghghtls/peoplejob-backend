@@ -266,7 +266,7 @@ class JobopeningServiceTest {
         Page<JobopeningEntity> draftPage = new PageImpl<>(draftList);
         Pageable pageable = PageRequest.of(0, 10);
 
-        when(jobopeningRepository.findDraftsByUser(eq(1L), eq(pageable))).thenReturn(draftPage);
+        when(jobopeningRepository.findDraftsByUser(eq(1L), eq(JobopeningEntity.JobStatus.DRAFT), eq(pageable))).thenReturn(draftPage);
 
         // When
         Page<JobopeningDTO> result = jobopeningService.getDraftsByUser(1L, pageable);
@@ -275,7 +275,7 @@ class JobopeningServiceTest {
         assertNotNull(result);
         assertEquals(1, result.getContent().size());
         assertEquals("DRAFT", result.getContent().get(0).getStatus());
-        verify(jobopeningRepository).findDraftsByUser(1L, pageable);
+        verify(jobopeningRepository).findDraftsByUser(1L, JobopeningEntity.JobStatus.DRAFT, pageable);
     }
 
     @Test
@@ -317,7 +317,7 @@ class JobopeningServiceTest {
         Page<JobopeningEntity> jobPage = new PageImpl<>(publishedJobs);
         Pageable pageable = PageRequest.of(0, 10);
 
-        when(jobopeningRepository.findPublishedJobs(eq(pageable))).thenReturn(jobPage);
+        when(jobopeningRepository.findPublishedJobs(eq(JobopeningEntity.JobStatus.PUBLISHED), eq(pageable))).thenReturn(jobPage);
 
         // When
         Page<JobopeningDTO> result = jobopeningService.getPublishedJobs(pageable);
@@ -326,7 +326,7 @@ class JobopeningServiceTest {
         assertNotNull(result);
         assertEquals(1, result.getContent().size());
         assertEquals("PUBLISHED", result.getContent().get(0).getStatus());
-        verify(jobopeningRepository).findPublishedJobs(pageable);
+        verify(jobopeningRepository).findPublishedJobs(JobopeningEntity.JobStatus.PUBLISHED, pageable);
     }
 
     @Test
@@ -409,14 +409,14 @@ class JobopeningServiceTest {
     void expireOverdueJobs() {
         // Given
         List<JobopeningEntity> overdueJobs = Arrays.asList(testJobEntity);
-        when(jobopeningRepository.findExpiredJobs(any(LocalDate.class))).thenReturn(overdueJobs);
+        when(jobopeningRepository.findExpiredJobs(any(JobopeningEntity.JobStatus.class), any(LocalDate.class))).thenReturn(overdueJobs);
         when(jobopeningRepository.save(any(JobopeningEntity.class))).thenReturn(testJobEntity);
 
         // When
         assertDoesNotThrow(() -> jobopeningService.expireOverdueJobs());
 
         // Then
-        verify(jobopeningRepository).findExpiredJobs(any(LocalDate.class));
+        verify(jobopeningRepository).findExpiredJobs(any(JobopeningEntity.JobStatus.class), any(LocalDate.class));
         verify(jobopeningRepository).save(any(JobopeningEntity.class));
     }
 
@@ -428,7 +428,8 @@ class JobopeningServiceTest {
         Page<JobopeningEntity> searchPage = new PageImpl<>(searchResults);
         Pageable pageable = PageRequest.of(0, 10);
 
-        when(jobopeningRepository.searchPublishedJobs(eq("백엔드"), eq(pageable))).thenReturn(searchPage);
+        when(jobopeningRepository.fullTextSearchPublishedJobs(eq("백엔드"), eq(pageable))).thenThrow(new RuntimeException("fulltext not available"));
+        when(jobopeningRepository.searchPublishedJobs(eq("백엔드"), eq(JobopeningEntity.JobStatus.PUBLISHED), eq(pageable))).thenReturn(searchPage);
 
         // When
         Page<JobopeningDTO> result = jobopeningService.searchJobs("백엔드", pageable);
@@ -437,7 +438,7 @@ class JobopeningServiceTest {
         assertNotNull(result);
         assertEquals(1, result.getContent().size());
         assertTrue(result.getContent().get(0).getTitle().contains("백엔드"));
-        verify(jobopeningRepository).searchPublishedJobs("백엔드", pageable);
+        verify(jobopeningRepository).searchPublishedJobs("백엔드", JobopeningEntity.JobStatus.PUBLISHED, pageable);
     }
 
     @Test
@@ -449,7 +450,7 @@ class JobopeningServiceTest {
         Pageable pageable = PageRequest.of(0, 10);
 
         when(jobopeningRepository.findPublishedJobsByCategory(
-                eq("IT/소프트웨어"), eq("서울"), eq(pageable))).thenReturn(jobPage);
+                eq(JobopeningEntity.JobStatus.PUBLISHED), eq("IT/소프트웨어"), eq("서울"), eq(pageable))).thenReturn(jobPage);
 
         // When
         Page<JobopeningDTO> result = jobopeningService.getJobsByCategory("IT/소프트웨어", "서울", pageable);
@@ -459,7 +460,7 @@ class JobopeningServiceTest {
         assertEquals(1, result.getContent().size());
         assertEquals("IT/소프트웨어", result.getContent().get(0).getJobType());
         assertEquals("서울", result.getContent().get(0).getLocation());
-        verify(jobopeningRepository).findPublishedJobsByCategory("IT/소프트웨어", "서울", pageable);
+        verify(jobopeningRepository).findPublishedJobsByCategory(JobopeningEntity.JobStatus.PUBLISHED, "IT/소프트웨어", "서울", pageable);
     }
 
     @Test

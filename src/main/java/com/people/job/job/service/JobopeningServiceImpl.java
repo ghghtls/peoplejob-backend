@@ -144,7 +144,7 @@ public class JobopeningServiceImpl implements JobopeningService {
     @Override
     @Transactional(readOnly = true)
     public Page<JobopeningDTO> getDraftsByUser(Long userNo, Pageable pageable) {
-        return jobRepository.findDraftsByUser(userNo, pageable)
+        return jobRepository.findDraftsByUser(userNo, JobopeningEntity.JobStatus.DRAFT, pageable)
                 .map(JobopeningDTO::fromEntity);
     }
 
@@ -174,7 +174,7 @@ public class JobopeningServiceImpl implements JobopeningService {
     @Transactional(readOnly = true)
     @Cacheable(value = "publishedJobs", key = "#pageable.pageNumber + '-' + #pageable.pageSize")
     public Page<JobopeningDTO> getPublishedJobs(Pageable pageable) {
-        return jobRepository.findPublishedJobs(pageable)
+        return jobRepository.findPublishedJobs(JobopeningEntity.JobStatus.PUBLISHED, pageable)
                 .map(JobopeningDTO::fromEntity);
     }
 
@@ -230,7 +230,7 @@ public class JobopeningServiceImpl implements JobopeningService {
     @Override
     @CacheEvict(value = "publishedJobs", allEntries = true)
     public void expireOverdueJobs() {
-        List<JobopeningEntity> expiredJobs = jobRepository.findExpiredJobs(LocalDate.now());
+        List<JobopeningEntity> expiredJobs = jobRepository.findExpiredJobs(JobopeningEntity.JobStatus.PUBLISHED, LocalDate.now());
 
         for (JobopeningEntity job : expiredJobs) {
             job.expire();
@@ -245,24 +245,43 @@ public class JobopeningServiceImpl implements JobopeningService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "jobSearch", key = "#keyword + '-' + #pageable.pageNumber + '-' + #pageable.pageSize")
     public Page<JobopeningDTO> searchJobs(String keyword, Pageable pageable) {
         try {
-            // FULLTEXT INDEX가 있으면 대용량에서 10배+ 빠름
-            // 없으면 catch → LIKE 검색으로 자동 폴백
             return jobRepository.fullTextSearchPublishedJobs(keyword, pageable)
                     .map(JobopeningDTO::fromEntity);
         } catch (Exception e) {
-            log.warn("FULLTEXT 검색 실패 → LIKE 검색으로 폴백 (ALTER TABLE jobopening ADD FULLTEXT INDEX ft_job_search (title, content, company); 실행 필요): {}", e.getMessage());
-            return jobRepository.searchPublishedJobs(keyword, pageable)
-                    .map(JobopeningDTO::fromEntity);
+            // MAX_EXECUTION_TIME 초과(3024) 또는 FULLTEXT 인덱스 없음 → LIKE 폴백
+            log.warn("FULLTEXT 검색 실패({}) → LIKE 폴백", e.getMessage());
+            try {
+                return jobRepository.searchPublishedJobs(keyword, JobopeningEntity.JobStatus.PUBLISHED, pageable)
+                        .map(JobopeningDTO::fromEntity);
+            } catch (Exception ex) {
+                log.error("LIKE 검색도 실패: {}", ex.getMessage());
+                return Page.empty(pageable);
+            }
         }
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<JobopeningDTO> getJobsByCategory(String jobType, String location, Pageable pageable) {
-        return jobRepository.findPublishedJobsByCategory(jobType, location, pageable)
-                .map(JobopeningDTO::fromEntity);
+        boolean hasJobType = jobType != null && !jobType.isBlank();
+        boolean hasLocation = location != null && !location.isBlank();
+
+        if (hasJobType && hasLocation) {
+            return jobRepository.findPublishedJobsByCategory(JobopeningEntity.JobStatus.PUBLISHED, jobType, location, pageable)
+                    .map(JobopeningDTO::fromEntity);
+        } else if (hasJobType) {
+            return jobRepository.findPublishedJobsByJobType(JobopeningEntity.JobStatus.PUBLISHED, jobType, pageable)
+                    .map(JobopeningDTO::fromEntity);
+        } else if (hasLocation) {
+            return jobRepository.findPublishedJobsByLocation(JobopeningEntity.JobStatus.PUBLISHED, location, pageable)
+                    .map(JobopeningDTO::fromEntity);
+        } else {
+            return jobRepository.findPublishedJobs(JobopeningEntity.JobStatus.PUBLISHED, pageable)
+                    .map(JobopeningDTO::fromEntity);
+        }
     }
 
 

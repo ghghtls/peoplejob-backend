@@ -1,6 +1,7 @@
 package com.people.job.config;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -40,9 +41,10 @@ public class RedisConfig implements CachingConfigurer {
     private String redisPassword;
 
     /**
-     * Redis 연결 팩토리 설정
+     * Redis 연결 팩토리 설정 — spring.cache.type=redis 일 때만 활성화
      */
     @Bean
+    @ConditionalOnProperty(name = "spring.cache.type", havingValue = "redis")
     public RedisConnectionFactory redisConnectionFactory() {
         RedisStandaloneConfiguration redisStandaloneConfiguration = new RedisStandaloneConfiguration();
         redisStandaloneConfiguration.setHostName(redisHost);
@@ -59,6 +61,7 @@ public class RedisConfig implements CachingConfigurer {
      * RedisTemplate 설정 - 객체 직렬화/역직렬화용
      */
     @Bean
+    @ConditionalOnProperty(name = "spring.cache.type", havingValue = "redis")
     public RedisTemplate<String, Object> redisTemplate() {
         RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
         redisTemplate.setConnectionFactory(redisConnectionFactory());
@@ -79,6 +82,7 @@ public class RedisConfig implements CachingConfigurer {
      * StringRedisTemplate - 문자열 전용 템플릿
      */
     @Bean
+    @ConditionalOnProperty(name = "spring.cache.type", havingValue = "redis")
     public StringRedisTemplate stringRedisTemplate() {
         StringRedisTemplate stringRedisTemplate = new StringRedisTemplate();
         stringRedisTemplate.setConnectionFactory(redisConnectionFactory());
@@ -86,9 +90,11 @@ public class RedisConfig implements CachingConfigurer {
     }
 
     /**
-     * 캐시 매니저 설정
+     * 캐시 매니저 설정 — spring.cache.type=redis 일 때만 Redis 캐시 사용
+     * dev/test 에서는 spring.cache.type=simple → Spring Boot 가 ConcurrentMapCacheManager 자동 구성
      */
     @Bean
+    @ConditionalOnProperty(name = "spring.cache.type", havingValue = "redis")
     public CacheManager cacheManager() {
         RedisCacheConfiguration redisCacheConfiguration = RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofMinutes(10)) // 기본 TTL 10분
