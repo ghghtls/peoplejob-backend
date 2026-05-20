@@ -38,7 +38,7 @@
 | 데이터베이스 | MySQL 8.x |
 | 캐시 | Redis (운영) / ConcurrentMapCache (개발·테스트) |
 | 인증 | JWT Bearer Token |
-| 개발 포트 | **8090** |
+| 개발 포트 | **5000** |
 
 ---
 
@@ -170,7 +170,7 @@ DRAFT ──publish──► PUBLISHED ──deadline 초과──► EXPIRED
                    SUSPENDED
 ```
 
-### 회원 `/api/user`, `/api/auth`
+### 회원 `/api/users`, `/api/auth`
 
 JWT 토큰 발급, 회원 CRUD, 이메일 인증, 비밀번호 재설정.
 
@@ -217,7 +217,27 @@ JWT 토큰 발급, 회원 CRUD, 이메일 인증, 비밀번호 재설정.
 
 ## 환경 변수
 
-`.env` 파일로 환경변수를 관리합니다. (API URL, Firebase, DB 접속 정보 등)
+`application.yml`에서 환경변수로 주입받는 항목입니다. 서버 실행 전 OS 환경변수 또는 `.env` 주입 방식으로 설정합니다.
+
+| 환경변수 | 기본값 | 설명 |
+|---------|--------|------|
+| `SPRING_PROFILES_ACTIVE` | `dev` | 활성 프로파일 |
+| `SPRING_DATASOURCE_URL` | `jdbc:mysql://localhost:3306/peoplejob` | DB 접속 URL |
+| `SPRING_DATASOURCE_USERNAME` | `root` | DB 사용자 |
+| `SPRING_DATASOURCE_PASSWORD` | `root` | DB 비밀번호 |
+| `REDIS_HOST` | `localhost` | Redis 호스트 |
+| `REDIS_PORT` | `6379` | Redis 포트 |
+| `REDIS_PASSWORD` | (없음) | Redis 비밀번호 |
+| `MAIL_HOST` | `smtp.gmail.com` | SMTP 서버 |
+| `MAIL_PORT` | `587` | SMTP 포트 |
+| `MAIL_USERNAME` | — | 이메일 계정 |
+| `MAIL_PASSWORD` | — | 이메일 앱 비밀번호 |
+| `MAIL_FROM` | `noreply@peoplejob.com` | 발신자 주소 |
+| `JWT_SECRET` | (내장 기본값) | JWT 서명 키 |
+| `JWT_EXPIRATION_MS` | `86400000` (24시간) | 토큰 만료 시간 |
+| `FILE_UPLOAD_PATH` | `./uploads` | 파일 저장 경로 |
+| `FILE_UPLOAD_URL` | `http://localhost:5000/uploads` | 파일 서빙 URL |
+| `CORS_ORIGINS` | `http://localhost:3000,...` | CORS 허용 출처 |
 
 ---
 
@@ -225,7 +245,7 @@ JWT 토큰 발급, 회원 CRUD, 이메일 인증, 비밀번호 재설정.
 
 | 프로파일 | 실행 방법 | 캐시 | DB | 용도 |
 |---------|----------|------|-----|------|
-| `dev` | `.\run-dev.ps1` | `simple` (in-memory) | MySQL (포트 3307) | 로컬 개발 |
+| `dev` | `.\run-dev.ps1` | `simple` (in-memory) | MySQL (포트 3306) | 로컬 개발 |
 | `prod` | JAR + env | `redis` | MySQL | 운영 배포 |
 | `test` | Maven test | `simple` | H2 in-memory | 자동화 테스트 |
 
@@ -285,13 +305,26 @@ hikari:
 | `0 0 * * * *` (매시간) | 마감일 지난 공고 추가 확인 |
 | `0 0 * * * *` (매시간) | 광고 종료일(`adEndDate`) 지난 공고 광고 플래그 해제 |
 
+### NotificationScheduler
+
+| 크론/주기 | 동작 |
+|----------|------|
+| `0 0 2 * * *` (새벽 2시) | 오래된 알림 일괄 삭제 |
+| 매시간 | 만료된 알림 삭제 |
+
+### TokenCleanupScheduler
+
+| 크론/주기 | 동작 |
+|----------|------|
+| 매시간 | DB에서 만료된 리셋 토큰 삭제 |
+
 ### RedisScheduledTasks *(Redis 환경 전용)*
 
 | 크론/주기 | 동작 |
 |----------|------|
-| `0 0 2 * * *` (새벽 2시) | 만료 토큰 정리 |
+| `0 0 2 * * *` (새벽 2시) | 만료 세션/토큰 정리 |
 | 10분마다 | Redis 연결 헬스체크 |
-| `0 0 * * * *` (매시간) | 캐시 통계 로깅 |
+| `0 0 * * * *` (매시간) | 만료 토큰 캐시 정리 |
 
 ---
 
@@ -647,6 +680,8 @@ DEALLOCATE PREPARE stmt;
 
 ### Spring Actuator 엔드포인트
 
+기본 노출 엔드포인트 (`health,info,metrics,env`):
+
 | 경로 | 설명 |
 |------|------|
 | `/actuator/health` | 서버·DB·Redis 상태 (인증 사용자만 상세 정보 노출) |
@@ -656,7 +691,8 @@ DEALLOCATE PREPARE stmt;
 ### Prometheus 스크래핑
 
 `micrometer-registry-prometheus` 의존성이 포함되어 있습니다.  
-Prometheus 스크래핑을 활성화하려면 `application.yml`의 actuator 노출 목록에 `prometheus`를 추가합니다.
+기본 설정에서는 `prometheus` 엔드포인트가 비노출 상태입니다.  
+운영 환경에서 Prometheus 스크래핑을 활성화하려면 `application.yml`을 수정합니다.
 
 ```yaml
 management:
@@ -678,13 +714,13 @@ management:
 ### 요구사항
 
 - Java 17+
-- MySQL 8.x (포트 3307, DB명 `peoplejob`)
+- MySQL 8.x (포트 3306, DB명 `peoplejob`)
 - (선택) Redis — 없어도 dev 프로파일에서 정상 기동됨
 
 ### 실행
 
 ```powershell
-# 빌드 + 실행 (dev 프로파일, 포트 8090)
+# 빌드 + 실행 (dev 프로파일, 포트 5000)
 .\run-dev.ps1
 ```
 
@@ -820,7 +856,7 @@ management:
 서버 실행 후 아래 URL에서 Swagger UI를 확인할 수 있습니다.
 
 ```
-http://localhost:8090/swagger-ui.html
+http://localhost:5000/swagger-ui.html
 ```
 
 인증이 필요한 API는 로그인 후 발급된 JWT 토큰을  
