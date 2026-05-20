@@ -3,6 +3,7 @@ package com.people.job.peoplejob_backend.job.service;
 import com.people.job.job.dto.JobopeningDTO;
 import com.people.job.job.entity.JobopeningEntity;
 import com.people.job.job.repository.JobopeningRepository;
+import com.people.job.job.service.AsyncViewCountService;
 import com.people.job.job.service.JobopeningServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -35,6 +36,9 @@ class JobopeningServiceTest {
 
     @MockitoBean
     private JobopeningRepository jobopeningRepository;
+
+    @MockitoBean
+    private AsyncViewCountService asyncViewCountService;
 
     @Autowired
     private JobopeningServiceImpl jobopeningService;
@@ -155,7 +159,7 @@ class JobopeningServiceTest {
                 .build();
 
         // When
-        JobopeningDTO result = jobopeningService.update(1L, updateDTO);
+        JobopeningDTO result = jobopeningService.update(1L, updateDTO, 1L);
 
         // Then
         assertNotNull(result);
@@ -174,7 +178,7 @@ class JobopeningServiceTest {
         when(jobopeningRepository.save(any(JobopeningEntity.class))).thenReturn(testJobEntity);
 
         // When
-        assertDoesNotThrow(() -> jobopeningService.delete(1L));
+        assertDoesNotThrow(() -> jobopeningService.delete(1L, 1L));
 
         // Then
         verify(jobopeningRepository).findByJobNoAndIsActiveTrue(1L);
@@ -248,7 +252,7 @@ class JobopeningServiceTest {
                 .build();
 
         // When
-        JobopeningDTO result = jobopeningService.saveDraft(draftDTO);
+        JobopeningDTO result = jobopeningService.saveDraft(draftDTO, 1L);
 
         // Then
         assertNotNull(result);

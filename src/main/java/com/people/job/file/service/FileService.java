@@ -32,4 +32,6 @@ public interface FileService {
     boolean isValidDocumentFile(MultipartFile file);
 
     String generateFileName(String originalName, String prefix);
+
+    Map<String, Object> getFileInfo(String fileUrl);
 }

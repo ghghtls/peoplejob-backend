@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.people.job.inquiry.controller.InquiryController;
 import com.people.job.inquiry.dto.InquiryDTO;
 import com.people.job.inquiry.service.InquiryService;
+import com.people.job.user.security.JwtTokenProvider;
+import com.people.job.user.service.CustomUserDetailsService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -11,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -20,12 +23,14 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(InquiryController.class)
 @ActiveProfiles("test")
+@WithMockUser
 @DisplayName("문의사항 컨트롤러 테스트")
 class InquiryControllerTest {
 
@@ -37,6 +42,12 @@ class InquiryControllerTest {
 
     @MockitoBean
     private InquiryService inquiryService;
+
+    @MockitoBean
+    private JwtTokenProvider jwtTokenProvider;
+
+    @MockitoBean
+    private CustomUserDetailsService customUserDetailsService;
 
     private InquiryDTO testInquiry;
 
@@ -66,6 +77,7 @@ class InquiryControllerTest {
 
         // When & Then
         mockMvc.perform(post("/api/inquiry") // 실제 매핑 경로
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(testInquiry)))
                 .andDo(print())
@@ -117,6 +129,7 @@ class InquiryControllerTest {
 
         // When & Then
         mockMvc.perform(put("/api/inquiry/{inquiryNo}", 1L) // 실제 매핑 경로
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateInquiry)))
                 .andDo(print())
@@ -131,7 +144,8 @@ class InquiryControllerTest {
         doNothing().when(inquiryService).deleteInquiry(1L); // 실제 메서드명
 
         // When & Then
-        mockMvc.perform(delete("/api/inquiry/{inquiryNo}", 1L)) // 실제 매핑 경로
+        mockMvc.perform(delete("/api/inquiry/{inquiryNo}", 1L) // 실제 매핑 경로
+                        .with(csrf()))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().string("문의 삭제 완료")); // 실제 응답 메시지
@@ -145,6 +159,7 @@ class InquiryControllerTest {
 
         // When & Then
         mockMvc.perform(put("/api/inquiry/{inquiryNo}/answer", 1L) // 실제 매핑 경로
+                        .with(csrf())
                         .param("answer", "문의해 주신 내용에 대해 답변드립니다."))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -165,6 +180,7 @@ class InquiryControllerTest {
 
         // When & Then
         mockMvc.perform(post("/api/inquiry")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidInquiry)))
                 .andDo(print())
@@ -193,6 +209,7 @@ class InquiryControllerTest {
 
         // When & Then
         mockMvc.perform(put("/api/inquiry/{inquiryNo}", 999L)
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(testInquiry)))
                 .andDo(print())
@@ -207,7 +224,8 @@ class InquiryControllerTest {
                 .when(inquiryService).deleteInquiry(999L);
 
         // When & Then
-        mockMvc.perform(delete("/api/inquiry/{inquiryNo}", 999L))
+        mockMvc.perform(delete("/api/inquiry/{inquiryNo}", 999L)
+                        .with(csrf()))
                 .andDo(print())
                 .andExpect(status().isInternalServerError());
     }

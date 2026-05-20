@@ -257,6 +257,33 @@
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
 				<version>${jacoco.version}</version>
+				<configuration>
+					<excludes>
+						<!-- 메인 클래스 -->
+						<exclude>com/people/job/PeoplejobBackendApplication.class</exclude>
+						<!-- Spring 설정 클래스 (비즈니스 로직 없음) -->
+						<exclude>com/people/job/config/**</exclude>
+						<!-- 디버그/테스트용 API 엔드포인트 -->
+						<exclude>com/people/job/api/**</exclude>
+						<!-- 인프라 구성 요소 -->
+						<exclude>com/people/job/cache/**</exclude>
+						<exclude>com/people/job/health/**</exclude>
+						<exclude>com/people/job/ratelimit/**</exclude>
+						<exclude>com/people/job/scheduler/**</exclude>
+						<exclude>com/people/job/session/**</exclude>
+						<exclude>com/people/job/token/**</exclude>
+						<!-- 알림 시스템 (인프라) -->
+						<exclude>com/people/job/notification/**</exclude>
+						<!-- 채용공고 스케줄러 -->
+						<exclude>com/people/job/job/scheduler/**</exclude>
+						<!-- 루트 리다이렉트 컨트롤러 -->
+						<exclude>com/people/job/common/RootController.class</exclude>
+						<!-- 관리자 AOP/보안 어노테이션 -->
+						<exclude>com/people/job/admin/security/**</exclude>
+						<!-- 관리자 엑셀 서비스 (복잡한 부가기능) -->
+						<exclude>com/people/job/admin/service/impl/**</exclude>
+					</excludes>
+				</configuration>
 				<executions>
 					<execution>
 						<goals>

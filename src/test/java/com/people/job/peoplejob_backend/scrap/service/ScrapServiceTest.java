@@ -1,5 +1,6 @@
 package com.people.job.peoplejob_backend.scrap.service;
 
+import com.people.job.job.repository.JobopeningRepository;
 import com.people.job.scrap.dto.ScrapDTO;
 import com.people.job.scrap.entity.ScrapEntity;
 import com.people.job.scrap.repository.ScrapRepository;
@@ -27,6 +28,9 @@ class ScrapServiceTest {
 
     @Mock
     private ScrapRepository scrapRepository;
+
+    @Mock
+    private JobopeningRepository jobopeningRepository;
 
     @InjectMocks
     private ScrapServiceImpl scrapService;

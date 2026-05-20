@@ -43,6 +43,9 @@ public class UserServiceImpl implements UserService {
     public Map<String, String> register(UserDTO dto) {
         // 기본 회원가입 로직 구현 필요
         try {
+            // 비밀번호 유효성 검증
+            validatePassword(dto.getPassword());
+
             // 아이디 중복 확인
             if (userRepository.findByUserid(dto.getUserid()).isPresent()) {
                 throw new RuntimeException("이미 사용중인 아이디입니다.");

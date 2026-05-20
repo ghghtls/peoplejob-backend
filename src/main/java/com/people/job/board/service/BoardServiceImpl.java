@@ -4,7 +4,9 @@ import com.people.job.board.dto.BoardDTO;
 import com.people.job.board.entity.BoardEntity;
 import com.people.job.board.repository.BoardRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -80,6 +82,8 @@ public class BoardServiceImpl implements BoardService {
     }
 
     @Override
+    @Async("taskExecutor")
+    @Transactional
     public void increaseViewCount(Long boardNo) {
         BoardEntity entity = boardRepository.findById(boardNo)
                 .orElseThrow(() -> new RuntimeException("게시글이 없습니다."));

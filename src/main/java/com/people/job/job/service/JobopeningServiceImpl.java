@@ -26,6 +26,7 @@ public class JobopeningServiceImpl implements JobopeningService {
 
     private final JobopeningRepository jobRepository;
     private final UserRepository userRepository;
+    private final AsyncViewCountService asyncViewCountService;
 
     @Override
     @CacheEvict(value = "publishedJobs", allEntries = true)
@@ -50,14 +51,13 @@ public class JobopeningServiceImpl implements JobopeningService {
     }
 
     @Override
-    @Transactional  // readOnly 제거 — 조회수 write가 포함되어 있음
+    @Transactional(readOnly = true)
     public JobopeningDTO getById(Long jobNo) {
         JobopeningEntity entity = jobRepository.findByJobNoAndIsActiveTrue(jobNo)
                 .orElseThrow(() -> new RuntimeException("채용공고를 찾을 수 없습니다."));
 
         if (entity.isPublished()) {
-            entity.setViewCount(entity.getViewCount() + 1);
-            jobRepository.save(entity);
+            asyncViewCountService.increment(jobNo);
         }
 
         return JobopeningDTO.fromEntity(entity);

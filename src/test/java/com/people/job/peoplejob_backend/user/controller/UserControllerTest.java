@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.people.job.user.controller.UserController;
 import com.people.job.user.dto.UserDTO;
 import com.people.job.user.entity.UserEntity;
+import com.people.job.user.security.JwtTokenProvider;
+import com.people.job.user.service.CustomUserDetailsService;
 import com.people.job.user.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -12,8 +14,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.util.HashMap;
@@ -21,12 +26,14 @@ import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(UserController.class)
 @ActiveProfiles("test")
+@WithMockUser
 @DisplayName("사용자 컨트롤러 테스트")
 class UserControllerTest {
 
@@ -38,6 +45,12 @@ class UserControllerTest {
 
     @MockitoBean
     private UserService userService;
+
+    @MockitoBean
+    private JwtTokenProvider jwtTokenProvider;
+
+    @MockitoBean
+    private CustomUserDetailsService customUserDetailsService;
 
     private UserDTO testUser;
     private UserEntity testUserEntity;
@@ -76,6 +89,7 @@ class UserControllerTest {
 
         // When & Then
         mockMvc.perform(post("/api/users/register")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(testUser)))
                 .andDo(print())
@@ -92,6 +106,7 @@ class UserControllerTest {
 
         // When & Then
         mockMvc.perform(post("/api/users/register")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(testUser)))
                 .andDo(print())
@@ -111,6 +126,7 @@ class UserControllerTest {
 
         // When & Then
         mockMvc.perform(post("/api/users/login")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(testUser)))
                 .andDo(print())
@@ -127,6 +143,7 @@ class UserControllerTest {
 
         // When & Then
         mockMvc.perform(post("/api/users/login")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(testUser)))
                 .andDo(print())
@@ -171,6 +188,7 @@ class UserControllerTest {
 
         // When & Then
         mockMvc.perform(post("/api/users/verify")
+                        .with(csrf())
                         .param("userid", "testuser")
                         .param("code", "123456"))
                 .andDo(print())
@@ -187,6 +205,7 @@ class UserControllerTest {
 
         // When & Then
         mockMvc.perform(post("/api/users/verify")
+                        .with(csrf())
                         .param("userid", "testuser")
                         .param("code", "wrong-code"))
                 .andDo(print())
@@ -224,6 +243,7 @@ class UserControllerTest {
 
         // When & Then
         mockMvc.perform(put("/api/users/profile/{userNo}", 1L)
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updatedUser)))
                 .andDo(print())
@@ -243,6 +263,7 @@ class UserControllerTest {
 
         // When & Then
         mockMvc.perform(put("/api/users/password/{userNo}", 1L)
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(passwordData)))
                 .andDo(print())
@@ -257,9 +278,139 @@ class UserControllerTest {
         doNothing().when(userService).deleteUser(1L);
 
         // When & Then
-        mockMvc.perform(delete("/api/users/profile/{userNo}", 1L))
+        mockMvc.perform(delete("/api/users/profile/{userNo}", 1L)
+                        .with(csrf()))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("회원 탈퇴가 성공적으로 처리되었습니다."));
+    }
+
+    @Test
+    @DisplayName("프로필 이미지 업로드 - 빈 파일")
+    void uploadProfileImage_emptyFile_returns400() throws Exception {
+        MockMultipartFile emptyFile = new MockMultipartFile("file", "photo.jpg", "image/jpeg", new byte[0]);
+
+        mockMvc.perform(multipart("/api/users/profile/{userNo}/image", 1L)
+                        .file(emptyFile)
+                        .with(csrf()))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("업로드할 파일을 선택해주세요."));
+    }
+
+    @Test
+    @DisplayName("프로필 이미지 업로드 - 이미지 아닌 파일")
+    void uploadProfileImage_nonImageFile_returns400() throws Exception {
+        MockMultipartFile pdfFile = new MockMultipartFile("file", "resume.pdf", "application/pdf", "content".getBytes());
+
+        mockMvc.perform(multipart("/api/users/profile/{userNo}/image", 1L)
+                        .file(pdfFile)
+                        .with(csrf()))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("이미지 파일만 업로드 가능합니다."));
+    }
+
+    @Test
+    @DisplayName("프로필 이미지 업로드 성공")
+    void uploadProfileImage_success_returns200() throws Exception {
+        MockMultipartFile imageFile = new MockMultipartFile("file", "profile.jpg", "image/jpeg", "fake-image".getBytes());
+
+        when(userService.uploadProfileImage(eq(1L), any(MultipartFile.class)))
+                .thenReturn("http://example.com/uploads/profile.jpg");
+
+        mockMvc.perform(multipart("/api/users/profile/{userNo}/image", 1L)
+                        .file(imageFile)
+                        .with(csrf()))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("프로필 이미지가 성공적으로 업로드되었습니다."))
+                .andExpect(jsonPath("$.imageUrl").value("http://example.com/uploads/profile.jpg"));
+    }
+
+    @Test
+    @DisplayName("프로필 이미지 삭제 성공")
+    void deleteProfileImage_success_returns200() throws Exception {
+        doNothing().when(userService).deleteProfileImage(1L);
+
+        mockMvc.perform(delete("/api/users/profile/{userNo}/image", 1L)
+                        .with(csrf()))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("프로필 이미지가 성공적으로 삭제되었습니다."));
+    }
+
+    @Test
+    @DisplayName("프로필 이미지 삭제 실패")
+    void deleteProfileImage_failure_returns400() throws Exception {
+        doThrow(new RuntimeException("이미지가 없습니다.")).when(userService).deleteProfileImage(1L);
+
+        mockMvc.perform(delete("/api/users/profile/{userNo}/image", 1L)
+                        .with(csrf()))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("이미지가 없습니다."));
+    }
+
+    @Test
+    @DisplayName("회원 정보 조회 실패")
+    void getUserProfile_failure_returns400() throws Exception {
+        when(userService.getUserProfile(999L))
+                .thenThrow(new RuntimeException("사용자를 찾을 수 없습니다."));
+
+        mockMvc.perform(get("/api/users/profile/{userNo}", 999L))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("사용자를 찾을 수 없습니다."));
+    }
+
+    @Test
+    @DisplayName("회원 정보 수정 실패")
+    void updateUserProfile_failure_returns400() throws Exception {
+        when(userService.updateUserProfile(eq(1L), any(UserDTO.class)))
+                .thenThrow(new RuntimeException("수정에 실패했습니다."));
+
+        mockMvc.perform(put("/api/users/profile/{userNo}", 1L)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(testUser)))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("수정에 실패했습니다."));
+    }
+
+    @Test
+    @DisplayName("비밀번호 변경 - 현재 비밀번호 누락")
+    void changePassword_missingCurrentPassword_returns400() throws Exception {
+        java.util.Map<String, String> passwordData = new java.util.HashMap<>();
+        passwordData.put("newPassword", "NewPass123!");
+        // currentPassword 생략
+
+        mockMvc.perform(put("/api/users/password/{userNo}", 1L)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(passwordData)))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("현재 비밀번호와 새 비밀번호를 모두 입력해주세요."));
+    }
+
+    @Test
+    @DisplayName("비밀번호 변경 실패 - 서비스 예외")
+    void changePassword_failure_returns400() throws Exception {
+        java.util.Map<String, String> passwordData = new java.util.HashMap<>();
+        passwordData.put("currentPassword", "WrongPass");
+        passwordData.put("newPassword", "NewPass123!");
+
+        doThrow(new RuntimeException("현재 비밀번호가 일치하지 않습니다."))
+                .when(userService).changePassword(eq(1L), anyString(), anyString());
+
+        mockMvc.perform(put("/api/users/password/{userNo}", 1L)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(passwordData)))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("현재 비밀번호가 일치하지 않습니다."));
     }
 }

@@ -62,6 +62,7 @@ public class WebSecurityConfig {
                                 antMatcher("/api/board/**"),
                                 antMatcher("/api/email/**"),
                                 antMatcher("/api/notice/**"),
+                                antMatcher("/api/apply/check"),
                                 antMatcher("/uploads/**")
                         ).permitAll()
 

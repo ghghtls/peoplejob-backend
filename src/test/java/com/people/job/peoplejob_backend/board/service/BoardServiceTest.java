@@ -12,6 +12,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
 
+import static org.mockito.Mockito.timeout;
+
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
@@ -181,9 +183,9 @@ class BoardServiceTest {
         // When
         assertDoesNotThrow(() -> boardService.increaseViewCount(1L)); // 실제 메서드명과 일치
 
-        // Then
-        verify(boardRepository).findById(1L);
-        verify(boardRepository).save(any(BoardEntity.class));
+        // Then - @Async method runs in background thread; use timeout
+        verify(boardRepository, timeout(5000)).findById(1L);
+        verify(boardRepository, timeout(5000)).save(any(BoardEntity.class));
     }
 
     @Test

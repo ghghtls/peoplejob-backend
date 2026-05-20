@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.people.job.board.controller.BoardController;
 import com.people.job.board.dto.BoardDTO;
 import com.people.job.board.service.BoardService;
+import com.people.job.user.security.JwtTokenProvider;
+import com.people.job.user.service.CustomUserDetailsService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -11,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -20,12 +23,14 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(BoardController.class)
 @ActiveProfiles("test")
+@WithMockUser
 @DisplayName("게시판 컨트롤러 테스트")
 class BoardControllerTest {
 
@@ -37,6 +42,12 @@ class BoardControllerTest {
 
     @MockitoBean
     private BoardService boardService;
+
+    @MockitoBean
+    private JwtTokenProvider jwtTokenProvider;
+
+    @MockitoBean
+    private CustomUserDetailsService customUserDetailsService;
 
     private BoardDTO testBoard;
 
@@ -61,6 +72,7 @@ class BoardControllerTest {
 
         // When & Then
         mockMvc.perform(post("/api/board") // 실제 매핑 경로
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(testBoard)))
                 .andDo(print())
@@ -130,6 +142,7 @@ class BoardControllerTest {
 
         // When & Then
         mockMvc.perform(put("/api/board/{boardNo}", 1L)
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateBoard)))
                 .andDo(print())
@@ -144,7 +157,8 @@ class BoardControllerTest {
         doNothing().when(boardService).deleteBoard(1L);
 
         // When & Then
-        mockMvc.perform(delete("/api/board/{boardNo}", 1L))
+        mockMvc.perform(delete("/api/board/{boardNo}", 1L)
+                        .with(csrf()))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().string("게시글 삭제 완료")); // 실제 응답 메시지
@@ -164,6 +178,7 @@ class BoardControllerTest {
 
         // When & Then
         mockMvc.perform(post("/api/board")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidBoard)))
                 .andDo(print())
@@ -192,6 +207,7 @@ class BoardControllerTest {
 
         // When & Then
         mockMvc.perform(put("/api/board/{boardNo}", 999L)
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(testBoard)))
                 .andDo(print())
@@ -206,7 +222,8 @@ class BoardControllerTest {
                 .when(boardService).deleteBoard(999L);
 
         // When & Then
-        mockMvc.perform(delete("/api/board/{boardNo}", 999L))
+        mockMvc.perform(delete("/api/board/{boardNo}", 999L)
+                        .with(csrf()))
                 .andDo(print())
                 .andExpect(status().isInternalServerError());
     }

@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.people.job.resume.controller.ResumeController;
 import com.people.job.resume.dto.ResumeDTO;
 import com.people.job.resume.service.ResumeService;
+import com.people.job.user.security.JwtTokenProvider;
+import com.people.job.user.service.CustomUserDetailsService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -11,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -20,12 +23,14 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(ResumeController.class)
 @ActiveProfiles("test")
+@WithMockUser
 @DisplayName("이력서 컨트롤러 테스트")
 class ResumeControllerTest {
 
@@ -37,6 +42,12 @@ class ResumeControllerTest {
 
     @MockitoBean
     private ResumeService resumeService;
+
+    @MockitoBean
+    private JwtTokenProvider jwtTokenProvider;
+
+    @MockitoBean
+    private CustomUserDetailsService customUserDetailsService;
 
     private ResumeDTO testResume;
 
@@ -68,6 +79,7 @@ class ResumeControllerTest {
 
         // When & Then
         mockMvc.perform(post("/api/resume") // 실제 매핑 경로
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(testResume)))
                 .andDo(print())
@@ -122,6 +134,7 @@ class ResumeControllerTest {
 
         // When & Then
         mockMvc.perform(put("/api/resume/{id}", 1L) // 실제 매핑 경로
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateResume)))
                 .andDo(print())
@@ -136,7 +149,8 @@ class ResumeControllerTest {
         doNothing().when(resumeService).deleteResume(1L); // 실제 메서드명
 
         // When & Then
-        mockMvc.perform(delete("/api/resume/{id}", 1L)) // 실제 매핑 경로
+        mockMvc.perform(delete("/api/resume/{id}", 1L) // 실제 매핑 경로
+                        .with(csrf()))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().string("이력서 삭제 완료")); // 실제 응답 메시지
@@ -172,6 +186,7 @@ class ResumeControllerTest {
 
         // When & Then
         mockMvc.perform(post("/api/resume")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidResume)))
                 .andDo(print())
@@ -200,6 +215,7 @@ class ResumeControllerTest {
 
         // When & Then
         mockMvc.perform(put("/api/resume/{id}", 999L)
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(testResume)))
                 .andDo(print())
@@ -214,7 +230,8 @@ class ResumeControllerTest {
                 .when(resumeService).deleteResume(999L);
 
         // When & Then
-        mockMvc.perform(delete("/api/resume/{id}", 999L))
+        mockMvc.perform(delete("/api/resume/{id}", 999L)
+                        .with(csrf()))
                 .andDo(print())
                 .andExpect(status().isInternalServerError());
     }

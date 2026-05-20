@@ -174,7 +174,7 @@ public class FileController {
     @GetMapping("/info")
     public ResponseEntity<?> getFileInfo(@RequestParam("fileUrl") String fileUrl) {
         try {
-            Map<String, Object> fileInfo = ((FileServiceImpl) fileService).getFileInfo(fileUrl);
+            Map<String, Object> fileInfo = fileService.getFileInfo(fileUrl);
             return ResponseEntity.ok(fileInfo);
         } catch (Exception e) {
             return ResponseEntity.badRequest()

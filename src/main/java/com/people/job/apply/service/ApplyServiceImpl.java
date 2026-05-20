@@ -22,6 +22,9 @@ public class ApplyServiceImpl implements ApplyService {
     @Override
     @Transactional(isolation = Isolation.SERIALIZABLE)
     public void applyToJob(ApplyDTO dto) {
+        if (dto.getResumeNo() == null) {
+            throw new IllegalArgumentException("resumeNo는 필수입니다.");
+        }
         boolean alreadyApplied = applyRepository.existsByUserNoAndJobNo(
                 dto.getUserNo(), dto.getJobNo()
         );

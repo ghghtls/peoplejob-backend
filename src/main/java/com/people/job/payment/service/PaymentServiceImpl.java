@@ -20,6 +20,9 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public void processPayment(PaymentDTO dto) {
+        if (dto.getUserNo() == null) {
+            throw new IllegalArgumentException("userNo는 필수입니다.");
+        }
         PaymentEntity entity = PaymentEntity.builder()
                 .userNo(dto.getUserNo())
                 .amount(dto.getAmount())

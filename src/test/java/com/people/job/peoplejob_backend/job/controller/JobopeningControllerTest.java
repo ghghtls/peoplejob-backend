@@ -4,6 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.people.job.job.controller.JobopeningController;
 import com.people.job.job.dto.JobopeningDTO;
 import com.people.job.job.service.JobopeningService;
+import com.people.job.user.entity.UserEntity;
+import com.people.job.user.repository.UserRepository;
+import com.people.job.user.security.JwtTokenProvider;
+import com.people.job.user.service.CustomUserDetailsService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,6 +19,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -23,15 +28,18 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(JobopeningController.class)
 @ActiveProfiles("test")
+@WithMockUser
 @DisplayName("채용공고 컨트롤러 테스트")
 class JobopeningControllerTest {
 
@@ -44,7 +52,17 @@ class JobopeningControllerTest {
     @MockitoBean
     private JobopeningService jobopeningService;
 
+    @MockitoBean
+    private JwtTokenProvider jwtTokenProvider;
+
+    @MockitoBean
+    private UserRepository userRepository;
+
+    @MockitoBean
+    private CustomUserDetailsService customUserDetailsService;
+
     private JobopeningDTO testJob;
+    private static final String AUTH_HEADER = "Bearer test-token";
 
     @BeforeEach
     void setUp() {
@@ -60,22 +78,34 @@ class JobopeningControllerTest {
                 .experience("3년 이상")
                 .education("학력무관")
                 .deadline(LocalDate.now().plusDays(30))
-                .regdate(LocalDate.now()) // LocalDate로 수정
+                .regdate(LocalDate.now())
                 .viewCount(0)
                 .isActive(true)
                 .userNo(1L)
                 .status("DRAFT")
                 .build();
+
+        when(jwtTokenProvider.validateToken(anyString())).thenReturn(true);
+        when(jwtTokenProvider.getUserid(anyString())).thenReturn("testuser");
+
+        UserEntity testUser = UserEntity.builder()
+                .userNo(1L)
+                .userid("testuser")
+                .username("테스트유저")
+                .password("password")
+                .email("test@test.com")
+                .build();
+        when(userRepository.findByUserid("testuser")).thenReturn(Optional.of(testUser));
     }
 
     @Test
     @DisplayName("채용공고 생성 성공 테스트")
     void createJobSuccess() throws Exception {
-        // Given
         when(jobopeningService.create(any(JobopeningDTO.class))).thenReturn(testJob);
 
-        // When & Then
         mockMvc.perform(post("/api/jobs")
+                        .with(csrf())
+                        .header("Authorization", AUTH_HEADER)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(testJob)))
                 .andDo(print())
@@ -87,13 +117,10 @@ class JobopeningControllerTest {
     @Test
     @DisplayName("채용공고 목록 조회 성공 테스트")
     void getAllJobsSuccess() throws Exception {
-        // Given
         List<JobopeningDTO> jobs = Arrays.asList(testJob);
         Page<JobopeningDTO> jobPage = new PageImpl<>(jobs, PageRequest.of(0, 10), 1);
-
         when(jobopeningService.getAll(any(Pageable.class))).thenReturn(jobPage);
 
-        // When & Then
         mockMvc.perform(get("/api/jobs")
                         .param("page", "0")
                         .param("size", "10"))
@@ -106,14 +133,11 @@ class JobopeningControllerTest {
     @Test
     @DisplayName("게시중인 채용공고 목록 조회 성공 테스트")
     void getPublishedJobsSuccess() throws Exception {
-        // Given
         testJob.setStatus("PUBLISHED");
         List<JobopeningDTO> jobs = Arrays.asList(testJob);
         Page<JobopeningDTO> jobPage = new PageImpl<>(jobs, PageRequest.of(0, 10), 1);
-
         when(jobopeningService.getPublishedJobs(any(Pageable.class))).thenReturn(jobPage);
 
-        // When & Then
         mockMvc.perform(get("/api/jobs")
                         .param("page", "0")
                         .param("size", "10")
@@ -127,10 +151,8 @@ class JobopeningControllerTest {
     @Test
     @DisplayName("채용공고 상세 조회 성공 테스트")
     void getJobByIdSuccess() throws Exception {
-        // Given
         when(jobopeningService.getById(1L)).thenReturn(testJob);
 
-        // When & Then
         mockMvc.perform(get("/api/jobs/{jobNo}", 1L))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -141,12 +163,12 @@ class JobopeningControllerTest {
     @Test
     @DisplayName("채용공고 수정 성공 테스트")
     void updateJobSuccess() throws Exception {
-        // Given
         testJob.setTitle("수정된 채용공고 제목");
-        when(jobopeningService.update(eq(1L), any(JobopeningDTO.class))).thenReturn(testJob);
+        when(jobopeningService.update(eq(1L), any(JobopeningDTO.class), anyLong())).thenReturn(testJob);
 
-        // When & Then
         mockMvc.perform(put("/api/jobs/{jobNo}", 1L)
+                        .with(csrf())
+                        .header("Authorization", AUTH_HEADER)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(testJob)))
                 .andDo(print())
@@ -158,11 +180,11 @@ class JobopeningControllerTest {
     @Test
     @DisplayName("채용공고 삭제 성공 테스트")
     void deleteJobSuccess() throws Exception {
-        // Given
-        doNothing().when(jobopeningService).delete(1L);
+        doNothing().when(jobopeningService).delete(eq(1L), anyLong());
 
-        // When & Then
-        mockMvc.perform(delete("/api/jobs/{jobNo}", 1L))
+        mockMvc.perform(delete("/api/jobs/{jobNo}", 1L)
+                        .with(csrf())
+                        .header("Authorization", AUTH_HEADER))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("채용공고가 삭제되었습니다."));
@@ -171,12 +193,12 @@ class JobopeningControllerTest {
     @Test
     @DisplayName("채용공고 임시저장 성공 테스트")
     void saveDraftSuccess() throws Exception {
-        // Given
         testJob.setStatus("DRAFT");
-        when(jobopeningService.saveDraft(any(JobopeningDTO.class))).thenReturn(testJob);
+        when(jobopeningService.saveDraft(any(JobopeningDTO.class), anyLong())).thenReturn(testJob);
 
-        // When & Then
         mockMvc.perform(post("/api/jobs/draft")
+                        .with(csrf())
+                        .header("Authorization", AUTH_HEADER)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(testJob)))
                 .andDo(print())
@@ -188,14 +210,12 @@ class JobopeningControllerTest {
     @Test
     @DisplayName("사용자별 임시저장 목록 조회 성공 테스트")
     void getUserDraftsSuccess() throws Exception {
-        // Given
         List<JobopeningDTO> drafts = Arrays.asList(testJob);
         Page<JobopeningDTO> draftPage = new PageImpl<>(drafts, PageRequest.of(0, 10), 1);
-
         when(jobopeningService.getDraftsByUser(eq(1L), any(Pageable.class))).thenReturn(draftPage);
 
-        // When & Then
-        mockMvc.perform(get("/api/jobs/user/{userNo}/drafts", 1L)
+        mockMvc.perform(get("/api/jobs/user/my/drafts")
+                        .header("Authorization", AUTH_HEADER)
                         .param("page", "0")
                         .param("size", "10"))
                 .andDo(print())
@@ -206,13 +226,12 @@ class JobopeningControllerTest {
     @Test
     @DisplayName("채용공고 게시 성공 테스트")
     void publishJobSuccess() throws Exception {
-        // Given
         testJob.setStatus("PUBLISHED");
         when(jobopeningService.publish(eq(1L), eq(1L))).thenReturn(testJob);
 
-        // When & Then
         mockMvc.perform(post("/api/jobs/{jobNo}/publish", 1L)
-                        .param("userNo", "1"))
+                        .with(csrf())
+                        .header("Authorization", AUTH_HEADER))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("채용공고가 게시되었습니다."))
@@ -222,14 +241,12 @@ class JobopeningControllerTest {
     @Test
     @DisplayName("사용자별 채용공고 목록 조회 성공 테스트")
     void getUserJobsSuccess() throws Exception {
-        // Given
         List<JobopeningDTO> jobs = Arrays.asList(testJob);
         Page<JobopeningDTO> jobPage = new PageImpl<>(jobs, PageRequest.of(0, 10), 1);
-
         when(jobopeningService.getByUser(eq(1L), any(Pageable.class))).thenReturn(jobPage);
 
-        // When & Then
-        mockMvc.perform(get("/api/jobs/user/{userNo}", 1L)
+        mockMvc.perform(get("/api/jobs/user/my")
+                        .header("Authorization", AUTH_HEADER)
                         .param("page", "0")
                         .param("size", "10"))
                 .andDo(print())
@@ -240,16 +257,14 @@ class JobopeningControllerTest {
     @Test
     @DisplayName("사용자 채용공고 상태별 개수 조회 성공 테스트")
     void getUserJobStatusCountsSuccess() throws Exception {
-        // Given
         Map<String, Long> counts = new HashMap<>();
         counts.put("DRAFT", 5L);
         counts.put("PUBLISHED", 10L);
         counts.put("EXPIRED", 3L);
-
         when(jobopeningService.getJobStatusCounts(1L)).thenReturn(counts);
 
-        // When & Then
-        mockMvc.perform(get("/api/jobs/user/{userNo}/status-counts", 1L))
+        mockMvc.perform(get("/api/jobs/user/my/status-counts")
+                        .header("Authorization", AUTH_HEADER))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.DRAFT").value(5))
@@ -260,13 +275,10 @@ class JobopeningControllerTest {
     @Test
     @DisplayName("채용공고 검색 성공 테스트")
     void searchJobsSuccess() throws Exception {
-        // Given
         List<JobopeningDTO> jobs = Arrays.asList(testJob);
         Page<JobopeningDTO> jobPage = new PageImpl<>(jobs, PageRequest.of(0, 10), 1);
-
         when(jobopeningService.searchJobs(eq("백엔드"), any(Pageable.class))).thenReturn(jobPage);
 
-        // When & Then
         mockMvc.perform(get("/api/jobs/search")
                         .param("keyword", "백엔드")
                         .param("page", "0")
@@ -280,14 +292,11 @@ class JobopeningControllerTest {
     @Test
     @DisplayName("채용공고 카테고리별 조회 성공 테스트")
     void getJobsByCategorySuccess() throws Exception {
-        // Given
         List<JobopeningDTO> jobs = Arrays.asList(testJob);
         Page<JobopeningDTO> jobPage = new PageImpl<>(jobs, PageRequest.of(0, 10), 1);
-
         when(jobopeningService.getJobsByCategory(eq("IT/소프트웨어"), eq("서울"), any(Pageable.class)))
                 .thenReturn(jobPage);
 
-        // When & Then
         mockMvc.perform(get("/api/jobs/category")
                         .param("jobType", "IT/소프트웨어")
                         .param("location", "서울")
@@ -301,12 +310,12 @@ class JobopeningControllerTest {
     @Test
     @DisplayName("채용공고 마감 처리 성공 테스트")
     void expireJobSuccess() throws Exception {
-        // Given
         testJob.setStatus("EXPIRED");
         when(jobopeningService.changeStatus(eq(1L), eq("EXPIRED"), isNull())).thenReturn(testJob);
 
-        // When & Then
-        mockMvc.perform(post("/api/jobs/{jobNo}/expire", 1L))
+        mockMvc.perform(post("/api/jobs/{jobNo}/expire", 1L)
+                        .with(csrf())
+                        .header("Authorization", AUTH_HEADER))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("채용공고가 마감 처리되었습니다."));
@@ -315,11 +324,11 @@ class JobopeningControllerTest {
     @Test
     @DisplayName("마감일 지난 채용공고 처리 성공 테스트")
     void expireOverdueJobsSuccess() throws Exception {
-        // Given
         doNothing().when(jobopeningService).expireOverdueJobs();
 
-        // When & Then
-        mockMvc.perform(post("/api/jobs/expire-overdue"))
+        mockMvc.perform(post("/api/jobs/expire-overdue")
+                        .with(csrf())
+                        .header("Authorization", AUTH_HEADER))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("마감일이 지난 채용공고들이 처리되었습니다."));

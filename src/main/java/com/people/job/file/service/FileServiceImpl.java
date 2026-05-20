@@ -509,6 +509,7 @@ public class FileServiceImpl implements FileService {
     }
 
     // 파일 정보 조회
+    @Override
     public Map<String, Object> getFileInfo(String fileUrl) {
         Map<String, Object> fileInfo = new HashMap<>();
 

@@ -23,6 +23,9 @@ public class ScrapServiceImpl implements ScrapService {
     @Override
     @Transactional
     public void addScrap(ScrapDTO dto) {
+        if (dto.getUserNo() == null || dto.getJobNo() == null) {
+            throw new IllegalArgumentException("userNo와 jobNo는 필수입니다.");
+        }
         // jobopeningNo -> jobNo
         boolean already = scrapRepository.existsByUserNoAndJobNo(dto.getUserNo(), dto.getJobNo());
         if (already) {

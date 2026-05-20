@@ -3,6 +3,8 @@ package com.people.job.peoplejob_backend.file.controller;
 import com.people.job.file.controller.FileController;
 import com.people.job.file.service.FileService;
 import com.people.job.file.service.FileServiceImpl;
+import com.people.job.user.security.JwtTokenProvider;
+import com.people.job.user.service.CustomUserDetailsService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,6 +15,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -21,12 +24,14 @@ import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(FileController.class)
 @ActiveProfiles("test")
+@WithMockUser
 @DisplayName("파일 컨트롤러 테스트")
 class FileControllerTest {
 
@@ -35,6 +40,12 @@ class FileControllerTest {
 
     @MockitoBean
     private FileService fileService;
+
+    @MockitoBean
+    private JwtTokenProvider jwtTokenProvider;
+
+    @MockitoBean
+    private CustomUserDetailsService customUserDetailsService;
 
     private MockMultipartFile testImageFile;
     private MockMultipartFile testDocumentFile;
@@ -66,6 +77,7 @@ class FileControllerTest {
         // When & Then
         mockMvc.perform(multipart("/api/files/upload/resume/image") // 실제 매핑 경로
                         .file(testImageFile)
+                        .with(csrf())
                         .param("resumeId", "1")
                         .param("type", "resume_image"))
                 .andDo(print())
@@ -87,6 +99,7 @@ class FileControllerTest {
         // When & Then
         mockMvc.perform(multipart("/api/files/upload/resume/file") // 실제 매핑 경로
                         .file(testDocumentFile)
+                        .with(csrf())
                         .param("resumeId", "1")
                         .param("type", "resume_file"))
                 .andDo(print())
@@ -108,6 +121,7 @@ class FileControllerTest {
         // When & Then
         mockMvc.perform(multipart("/api/files/upload/job/file") // 실제 매핑 경로
                         .file(testDocumentFile)
+                        .with(csrf())
                         .param("jobId", "1")
                         .param("type", "job_file"))
                 .andDo(print())
@@ -125,6 +139,7 @@ class FileControllerTest {
         // When & Then
         mockMvc.perform(multipart("/api/files/upload/board/image") // 실제 매핑 경로
                         .file(testImageFile)
+                        .with(csrf())
                         .param("type", "board_image"))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -139,6 +154,7 @@ class FileControllerTest {
 
         // When & Then
         mockMvc.perform(delete("/api/files/delete") // 실제 매핑 경로
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"fileUrl\":\"/uploads/test.jpg\"}"))
                 .andDo(print())
@@ -218,6 +234,7 @@ class FileControllerTest {
         // When & Then
         mockMvc.perform(multipart("/api/files/upload/resume/image")
                         .file(testImageFile)
+                        .with(csrf())
                         .param("resumeId", "1"))
                 .andDo(print())
                 .andExpect(status().isBadRequest())
@@ -241,6 +258,7 @@ class FileControllerTest {
         // When & Then
         mockMvc.perform(multipart("/api/files/upload/resume/file")
                         .file(unsupportedFile)
+                        .with(csrf())
                         .param("resumeId", "1"))
                 .andDo(print())
                 .andExpect(status().isBadRequest())
@@ -255,6 +273,7 @@ class FileControllerTest {
 
         // When & Then
         mockMvc.perform(delete("/api/files/delete")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"fileUrl\":\"/uploads/nonexistent.jpg\"}"))
                 .andDo(print())
@@ -294,6 +313,7 @@ class FileControllerTest {
         // When & Then
         mockMvc.perform(multipart("/api/files/upload/resume/file")
                         .file(emptyFile)
+                        .with(csrf())
                         .param("resumeId", "1"))
                 .andDo(print())
                 .andExpect(status().isBadRequest())

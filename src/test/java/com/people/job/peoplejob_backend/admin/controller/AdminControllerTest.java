@@ -9,6 +9,8 @@ import com.people.job.inquiry.service.InquiryService;
 import com.people.job.job.dto.JobopeningDTO;
 import com.people.job.payment.dto.PaymentDTO;
 import com.people.job.user.entity.UserEntity;
+import com.people.job.user.security.JwtTokenProvider;
+import com.people.job.user.service.CustomUserDetailsService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,6 +19,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.security.test.context.support.WithMockUser;
 
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -24,12 +27,14 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(AdminController.class)
 @ActiveProfiles("test")
+@WithMockUser
 @DisplayName("관리자 컨트롤러 테스트")
 class AdminControllerTest {
 
@@ -44,6 +49,12 @@ class AdminControllerTest {
 
     @MockitoBean
     private ExcelService excelService;
+
+    @MockitoBean
+    private JwtTokenProvider jwtTokenProvider;
+
+    @MockitoBean
+    private CustomUserDetailsService customUserDetailsService;
 
     private UserEntity testUser;
     private JobopeningDTO testJob;
@@ -117,7 +128,8 @@ class AdminControllerTest {
         doNothing().when(adminService).deleteUser(1L);
 
         // When & Then
-        mockMvc.perform(delete("/api/admin/users/{userNo}", 1L))
+        mockMvc.perform(delete("/api/admin/users/{userNo}", 1L)
+                        .with(csrf()))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().string("회원 삭제 완료")); // 실제 응답 메시지
@@ -145,7 +157,8 @@ class AdminControllerTest {
         doNothing().when(adminService).deleteJobopening(1L);
 
         // When & Then
-        mockMvc.perform(delete("/api/admin/jobs/{jobopeningNo}", 1L))
+        mockMvc.perform(delete("/api/admin/jobs/{jobopeningNo}", 1L)
+                        .with(csrf()))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().string("공고 삭제 완료")); // 실제 응답 메시지
@@ -173,7 +186,8 @@ class AdminControllerTest {
         doNothing().when(adminService).deleteInquiry(1L);
 
         // When & Then
-        mockMvc.perform(delete("/api/admin/inquiries/{inquiryNo}", 1L))
+        mockMvc.perform(delete("/api/admin/inquiries/{inquiryNo}", 1L)
+                        .with(csrf()))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().string("문의 삭제 완료")); // 실제 응답 메시지
@@ -187,6 +201,7 @@ class AdminControllerTest {
 
         // When & Then
         mockMvc.perform(put("/api/admin/inquiries/{inquiryNo}/answer", 1L)
+                        .with(csrf())
                         .param("answer", "답변 내용입니다.")
                         .param("answerBy", "관리자"))
                 .andDo(print())
