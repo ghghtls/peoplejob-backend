@@ -94,14 +94,34 @@ public class MypageServiceImpl implements MypageService {
     }
 
     private ApplyDTO toApplyDTO(ApplyEntity e) {
+        String jobTitle = null;
+        String companyName = null;
+        String resumeTitle = null;
+
+        if (e.getJobNo() != null) {
+            var jobOpt = jobopeningRepository.findById(e.getJobNo());
+            if (jobOpt.isPresent()) {
+                jobTitle = jobOpt.get().getTitle();
+                companyName = jobOpt.get().getCompany();
+            }
+        }
+        if (e.getResumeNo() != null) {
+            resumeTitle = resumeRepository.findById(e.getResumeNo())
+                    .map(ResumeEntity::getTitle)
+                    .orElse(null);
+        }
+
         return ApplyDTO.builder()
                 .applyNo(e.getApplyNo())
                 .resumeNo(e.getResumeNo())
-                .jobNo(e.getJobNo())            // jobopeningNo → jobNo
-                .userNo(e.getUserNo())          // 지원자 userNo (NOT NULL)
-                .applyDate(e.getApplyDate())    // regdate → applyDate
+                .jobNo(e.getJobNo())
+                .userNo(e.getUserNo())
+                .applyDate(e.getApplyDate())
                 .status(e.getStatus())
                 .message(e.getMessage())
+                .jobTitle(jobTitle)
+                .companyName(companyName)
+                .resumeTitle(resumeTitle)
                 .build();
     }
 }
